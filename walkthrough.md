@@ -1,7 +1,7 @@
 # AutiSense — Project Walkthrough
 
 > **MCA Final Year Project** · AI-Based Early Autism Detection System for Preschool Children (Ages 2–6)
-> **Stack:** React 18 + Vite + Tailwind CSS v4 + React Router v6 + Lucide React
+> **Stack:** React 18 + Vite + Tailwind CSS v4 + React Router v6 + Lucide React 
 
 ---
 
