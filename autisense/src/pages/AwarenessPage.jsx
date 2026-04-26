@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageWrapper, SectionHeading, Card, Btn } from '../components/UI';
 import { AWARENESS_SIGNS, RESOURCES } from '../data/dummyData';
 
 export default function AwarenessPage() {
+  const navigate = useNavigate();
   const [checkedItems, setCheckedItems] = useState(new Set());
 
   const handleCheck = (index) => {
@@ -24,11 +26,26 @@ export default function AwarenessPage() {
   ];
 
   return (
-    <PageWrapper style={{ padding: '0 0 60px' }}>
+    <PageWrapper style={{ paddingBottom: 60 }}>
       
       {/* Hero */}
-      <section style={{ background: 'linear-gradient(135deg, var(--orange-pale) 0%, white 100%)', padding: '80px 24px', textAlign: 'center', borderBottom: '1px solid var(--border)' }}>
+      <section style={{ background: 'linear-gradient(135deg, var(--orange-pale) 0%, white 100%)', padding: '40px 24px 80px', textAlign: 'center', borderBottom: '1px solid var(--border)', position: 'relative' }}>
         <div className="container animate-fadeInUp">
+          <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 20 }}>
+            <button
+              onClick={() => navigate('/')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                fontSize: '0.85rem', fontWeight: 600, color: 'var(--mid)',
+                cursor: 'pointer', background: 'none', border: 'none', padding: '4px 0',
+                fontFamily: 'var(--font-body)', transition: 'color 0.2s ease'
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--orange)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--mid)'}
+            >
+              &larr; Back to Home
+            </button>
+          </div>
           <div style={{ fontSize: '3rem', marginBottom: 16 }}>🧩</div>
           <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: '2.5rem', color: 'var(--dark)', marginBottom: 12 }}>
             Autism Awareness & Resources

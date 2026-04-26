@@ -28,7 +28,9 @@ export default function LoginPage() {
     if (errors[e.target.name]) setErrors({ ...errors, [e.target.name]: null });
   };
 
-  const handleSubmit = (e) => {
+  const [submitting, setSubmitting] = React.useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     let newErrs = {};
     if (!formData.email) newErrs.email = 'Email is required';
@@ -47,29 +49,53 @@ export default function LoginPage() {
       return;
     }
 
-    if (tab === 'login') {
-      const res = login(formData.email, formData.password, formData.role);
-      if (res.ok) {
-        showToast(`Welcome back, ${res.user.name}!`, 'success');
-        setTimeout(() => navigate(from || dashboardPath(res.user)), 800);
+    setSubmitting(true);
+    try {
+      if (tab === 'login') {
+        const res = await login(formData.email, formData.password, formData.role);
+        if (res.ok) {
+          showToast(`Welcome back, ${res.user.name}!`, 'success');
+          setTimeout(() => navigate(from || dashboardPath(res.user)), 800);
+        } else {
+          setErrors({ email: res.error || 'Invalid credentials' });
+        }
       } else {
-        setErrors({ email: res.error });
+        const res = await register(formData.name, formData.email, formData.password, formData.confirmPassword, formData.role);
+        if (res.ok) {
+          showToast(`Account created, ${res.user.name}!`, 'success');
+          setTimeout(() => navigate(dashboardPath(res.user)), 800);
+        } else {
+          setErrors({ email: res.error || 'Registration failed' });
+        }
       }
-    } else {
-      const res = register(formData.name, formData.email, formData.password, formData.confirmPassword, formData.role);
-      if (res.ok) {
-        showToast(`Account created, ${res.user.name}!`, 'success');
-        setTimeout(() => navigate(dashboardPath(res.user)), 800);
-      } else {
-        setErrors({ email: res.error });
-      }
+    } catch (err) {
+      setErrors({ email: err.message || 'Something went wrong. Please try again.' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <PageWrapper style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
+    <PageWrapper style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingBottom: 40, paddingInline: 20 }}>
       {ToastComponent}
-      <Card className="animate-fadeInUp" style={{ width: '100%', maxWidth: 440, padding: '36px 32px' }}>
+      
+      <div className="animate-fadeInUp" style={{ width: '100%', maxWidth: 440, marginBottom: 16 }}>
+        <button
+          onClick={() => navigate('/')}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            fontSize: '0.85rem', fontWeight: 600, color: 'var(--mid)',
+            cursor: 'pointer', background: 'none', border: 'none', padding: '4px 0',
+            fontFamily: 'var(--font-body)', transition: 'color 0.2s ease'
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = 'var(--orange)'}
+          onMouseLeave={e => e.currentTarget.style.color = 'var(--mid)'}
+        >
+          &larr; Back to Home
+        </button>
+      </div>
+
+      <Card className="animate-fadeInUp delay-1" style={{ width: '100%', maxWidth: 440, padding: '36px 32px' }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 12 }}>
              <span style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--orange)' }} />
@@ -123,8 +149,11 @@ export default function LoginPage() {
             </div>
           )}
 
-          <Btn type="submit" size="lg" style={{ marginTop: 8, width: '100%' }}>
-            {tab === 'login' ? 'Sign In' : 'Create Account'}
+          <Btn type="submit" size="lg" disabled={submitting} style={{ marginTop: 8, width: '100%' }}>
+            {submitting
+              ? (tab === 'login' ? 'Signing in…' : 'Creating account…')
+              : (tab === 'login' ? 'Sign In' : 'Create Account')
+            }
           </Btn>
         </form>
       </Card>

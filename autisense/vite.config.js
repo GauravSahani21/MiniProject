@@ -3,4 +3,14 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    proxy: {
+      // /api/* → Node.js Express backend on :5000
+      '/api': {
+        target:      'http://localhost:5000',
+        changeOrigin: true,
+        // NOTE: Do NOT rewrite — Node backend expects the /api prefix
+      },
+    },
+  },
 })

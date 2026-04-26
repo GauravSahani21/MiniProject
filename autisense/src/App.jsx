@@ -1,6 +1,9 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ScreeningProvider } from './context/ScreeningContext';
+
+import { DoctorProvider } from './context/DoctorContext';
 
 // Pages
 import LandingPage      from './pages/LandingPage';
@@ -69,9 +72,13 @@ function AppLayout() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppLayout />
-      </AuthProvider>
+      <ScreeningProvider>
+        <AuthProvider>
+          <DoctorProvider>
+            <AppLayout />
+          </DoctorProvider>
+        </AuthProvider>
+      </ScreeningProvider>
     </BrowserRouter>
   );
 }

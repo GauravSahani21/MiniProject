@@ -1,57 +1,65 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { auth } from '../api';
 
 const AuthContext = createContext(null);
 
-/* ── Demo accounts (no real backend) ──────────────── */
-const DEMO_ACCOUNTS = {
-  parent: { name: 'Priya Sharma',     email: 'parent@demo.com', role: 'parent' },
-  doctor: { name: 'Dr. Ramesh Gupta', email: 'doctor@demo.com', role: 'doctor' },
-  admin:  { name: 'Admin User',       email: 'admin@demo.com',  role: 'admin'  },
-};
-
-/* ── Provider ─────────────────────────────────────── */
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem('autisense_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(() => localStorage.getItem('autisense_token'));
+  const [loading, setLoading] = useState(true);
 
-  const login = useCallback((email, password, role) => {
-    // Accept any non-empty email+password — map role to demo account
-    if (!email || !password || !role) {
-      return { ok: false, error: 'All fields are required.' };
+  // Restore session
+  useEffect(() => {
+    const fetchUser = async () => {
+      if (token) {
+        try {
+          const res = await auth.getMe(token);
+          setUser(res.data);
+        } catch (err) {
+          console.error('Failed to restore session:', err);
+          setToken(null);
+          localStorage.removeItem('autisense_token');
+        }
+      }
+      setLoading(false);
+    };
+    fetchUser();
+  }, [token]);
+
+  const login = useCallback(async (email, password, role) => {
+    try {
+      // Role is not strictly needed for backend login, but we pass it anyway or ignore it
+      const res = await auth.login({ email, password });
+      
+      setUser(res.user);
+      setToken(res.token);
+      localStorage.setItem('autisense_token', res.token);
+      return { ok: true, user: res.user };
+    } catch (err) {
+      return { ok: false, error: err.message || 'Login failed' };
     }
-    const base = DEMO_ACCOUNTS[role] || DEMO_ACCOUNTS.parent;
-    // Use the entered email + the demo name/role
-    const userData = { ...base, email, role };
-    setUser(userData);
-    localStorage.setItem('autisense_user', JSON.stringify(userData));
-    return { ok: true, user: userData };
   }, []);
 
-  const register = useCallback((name, email, password, confirmPassword, role) => {
-    if (!name || !email || !password || !confirmPassword || !role) {
-      return { ok: false, error: 'All fields are required.' };
-    }
+  const register = useCallback(async (name, email, password, confirmPassword, role) => {
     if (password !== confirmPassword) {
       return { ok: false, error: 'Passwords do not match.' };
     }
-    if (password.length < 6) {
-      return { ok: false, error: 'Password must be at least 6 characters.' };
+    try {
+      const res = await auth.register({ name, email, password, role });
+      
+      setUser(res.user);
+      setToken(res.token);
+      localStorage.setItem('autisense_token', res.token);
+      return { ok: true, user: res.user };
+    } catch (err) {
+      return { ok: false, error: err.message || 'Registration failed' };
     }
-    const userData = { name, email, role };
-    setUser(userData);
-    localStorage.setItem('autisense_user', JSON.stringify(userData));
-    return { ok: true, user: userData };
   }, []);
 
   const logout = useCallback(() => {
     setUser(null);
-    localStorage.removeItem('autisense_user');
+    setToken(null);
+    localStorage.removeItem('autisense_token');
   }, []);
 
   const isAuthenticated = !!user;
@@ -63,9 +71,35 @@ export function AuthProvider({ children }) {
     return '/parent';
   }, [user]);
 
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--cream)',
+        flexDirection: 'column',
+        gap: 16,
+      }}>
+        <div style={{
+          width: 44, height: 44,
+          border: '4px solid rgba(255,107,43,0.15)',
+          borderTopColor: 'var(--orange)',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite',
+        }} />
+        <p style={{ fontFamily: 'var(--font-body)', color: 'var(--muted)', fontSize: '0.9rem' }}>
+          Loading AutiSense…
+        </p>
+      </div>
+    );
+  }
+
   return (
     <AuthContext.Provider value={{
       user,
+      token,
       login,
       register,
       logout,
@@ -77,7 +111,6 @@ export function AuthProvider({ children }) {
   );
 }
 
-/* ── Hook ─────────────────────────────────────────── */
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');

@@ -41,7 +41,7 @@ export default function ParentDashboard() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 36 }}>
           <div>
             <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: '2.2rem', color: 'var(--dark)' }}>
-              Hello, {user?.name.split(' ')[0]} 👋
+            Hello, {user?.name?.split(' ')[0] || 'there'} 👋
             </h1>
             <p style={{ fontSize: '0.9rem', color: 'var(--muted)', marginTop: 4 }}>
               Today is {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
@@ -102,7 +102,7 @@ export default function ParentDashboard() {
 
                 <div style={{ display: 'flex', gap: 10 }}>
                   <Btn variant="primary" style={{ flex: 1 }} onClick={() => navigate(`/screening/${c.id}`)}>Screen Now</Btn>
-                  <Btn variant="outline" style={{ flex: 1 }} onClick={() => navigate('/result')}>View Report</Btn>
+                  <Btn variant="outline" style={{ flex: 1 }} onClick={() => navigate('/history')}>View Reports</Btn>
                   <Btn variant="ghost" onClick={() => navigate(`/child/${c.id}`)}>Details</Btn>
                 </div>
               </Card>
@@ -135,7 +135,7 @@ export default function ParentDashboard() {
                   <td>{row.score} / {row.total}</td>
                   <td><Badge risk={row.risk} /></td>
                   <td style={{ textAlign: 'right' }}>
-                    <Btn size="sm" variant="ghost" onClick={() => navigate('/result')}>Report</Btn>
+                    <Btn size="sm" variant="ghost" onClick={() => navigate('/history')}>History</Btn>
                   </td>
                 </tr>
               ))}

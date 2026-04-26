@@ -2,26 +2,91 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageWrapper, Card, Btn, Select } from '../components/UI';
 import { CHILDREN, MCHAT_QUESTIONS } from '../data/dummyData';
+import { useScreening } from '../context/ScreeningContext';
+import { predictAutism } from '../services/api';
 
 export default function ScreeningPage() {
   const { childId } = useParams();
-  const navigate = useNavigate();
+  const navigate    = useNavigate();
+  const { setResult } = useScreening();
 
-  const [step, setStep] = useState(0); // 0 = pre, 1-5 = questions, 6 = analyzing
-  const [selectedChild, setSelectedChild] = useState(childId ? parseInt(childId) : (CHILDREN[0]?.id || ''));
-  const [answers, setAnswers] = useState({});
+  const [step, setStep]               = useState(0); // 0=pre, 1-5=questions, 6=analyzing
+  const [selectedChildId, setSelectedChildId] = useState(
+    childId ? parseInt(childId) : (CHILDREN[0]?.id || '')
+  );
+  const [answers, setAnswers]         = useState({});
+  const [apiError, setApiError]       = useState('');
+  const [analyzing, setAnalyzing]     = useState(false);
 
-  useEffect(() => {
-    if (step === 6) {
-      setTimeout(() => navigate('/result'), 1500);
+  const selectedChild = CHILDREN.find(c => c.id === Number(selectedChildId)) || CHILDREN[0];
+
+  /* ── Convert answers dict to ordered 0/1 array ── */
+  function buildAnswerArray() {
+    return MCHAT_QUESTIONS.map(q => {
+      const raw = answers[q.id]; // 'yes' | 'no'
+      return raw === 'yes' ? 1 : 0;
+    });
+  }
+
+  /* ── Submit to Flask API ─────────────────────── */
+  async function submitScreening() {
+    setAnalyzing(true);
+    setApiError('');
+    setStep(6);
+
+    const answerArray = buildAnswerArray();
+    const childPayload = {
+      name:   selectedChild.name,
+      age:    selectedChild.age,
+      gender: selectedChild.gender?.toLowerCase().startsWith('b') ? 'm' : 'f',
+    };
+
+    try {
+      const data = await predictAutism(answerArray, childPayload);
+      setResult({
+        child:       selectedChild,
+        answers:     answerArray,
+        screened_at: new Date().toISOString(),
+        ...data,
+      });
+      navigate('/result');
+    } catch (err) {
+      console.error('API call failed:', err);
+      // Graceful fallback: compute score locally so user still gets a result
+      const score = answerArray.reduce((sum, a, i) =>
+        sum + ((i < 10 && a === 0) || (i >= 10 && a === 1) ? 1 : 0), 0);
+      const risk  = score <= 6 ? 'Low' : score <= 13 ? 'Medium' : 'High';
+      setResult({
+        child:       selectedChild,
+        answers:     answerArray,
+        screened_at: new Date().toISOString(),
+        prediction:  risk !== 'Low' ? 1 : 0,
+        probability: Math.round((score / 20) * 100),
+        risk,
+        score,
+        total:       20,
+        categories: {
+          Social:        parseFloat((answerArray.slice(0, 4).filter(a => a === 0).length / 4).toFixed(2)),
+          Communication: parseFloat((answerArray.slice(4, 8).filter(a => a === 0).length / 4).toFixed(2)),
+          Behavior:      parseFloat(([...answerArray.slice(8,10).map(a=>1-a), ...answerArray.slice(10,12)].reduce((s,v)=>s+v,0) / 4).toFixed(2)),
+          Sensory:       parseFloat((answerArray.slice(12, 16).reduce((s, v) => s + v, 0) / 4).toFixed(2)),
+          Routine:       parseFloat(([...answerArray.slice(16,19), 1 - answerArray[19]].reduce((s,v)=>s+v,0) / 4).toFixed(2)),
+        },
+        flagged: MCHAT_QUESTIONS
+          .filter((q, i) => (i < 10 && answerArray[i] === 0) || (i >= 10 && answerArray[i] === 1))
+          .map(q => `Question ${q.id}`),
+        _offline: true,
+      });
+      navigate('/result');
     }
-  }, [step, navigate]);
+  }
 
   const handleAnswer = (qId, val) => setAnswers({ ...answers, [qId]: val });
 
   const currentQuestions = MCHAT_QUESTIONS.filter(q => q.step === step - 1);
   const allAnswered = currentQuestions.every(q => answers[q.id] !== undefined);
 
+  /* ── PRE-SCREEN ──────────────────────────────── */
   if (step === 0) {
     return (
       <PageWrapper style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
@@ -31,11 +96,11 @@ export default function ScreeningPage() {
             <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.4rem', color: 'var(--dark)' }}>M-CHAT Screening</h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: 4 }}>Answer 20 questions to assess your child's development.</p>
           </div>
-          
-          <Select label="Select Child" value={selectedChild} onChange={e => setSelectedChild(e.target.value)}>
+
+          <Select label="Select Child" value={selectedChildId} onChange={e => setSelectedChildId(e.target.value)}>
             {CHILDREN.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </Select>
-          
+
           <div style={{ background: 'var(--orange-pale)', padding: 16, borderRadius: 'var(--radius-sm)', marginTop: 24, fontSize: '0.85rem', color: 'var(--dark)', border: '1px solid var(--border)' }}>
             <strong>Before you start:</strong>
             <ul style={{ paddingLeft: 20, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -44,8 +109,8 @@ export default function ScreeningPage() {
               <li>This test takes about 5 minutes.</li>
             </ul>
           </div>
-          
-          <Btn size="lg" style={{ width: '100%', marginTop: 28 }} onClick={() => setStep(1)} disabled={!selectedChild}>
+
+          <Btn size="lg" style={{ width: '100%', marginTop: 28 }} onClick={() => setStep(1)} disabled={!selectedChildId}>
             Begin Screening
           </Btn>
         </Card>
@@ -53,18 +118,25 @@ export default function ScreeningPage() {
     );
   }
 
+  /* ── ANALYZING (step 6) ──────────────────────── */
   if (step === 6) {
     return (
       <PageWrapper style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
         <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div className="animate-spin" style={{ width: 48, height: 48, border: '4px solid var(--orange-pale)', borderTopColor: 'var(--orange)', borderRadius: '50%', marginBottom: 20 }} />
           <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.2rem' }}>Analyzing with AI...</h2>
-          <p style={{ fontSize: '0.9rem', color: 'var(--muted)', marginTop: 8 }}>Scoring responses against clinical markers.</p>
+          <p style={{ fontSize: '0.9rem', color: 'var(--muted)', marginTop: 8 }}>Scoring responses against clinical ML model.</p>
+          {apiError && (
+            <p style={{ marginTop: 16, fontSize: '0.8rem', color: 'var(--red)', maxWidth: 320 }}>
+              ⚠️ {apiError} — using offline scoring as fallback.
+            </p>
+          )}
         </div>
       </PageWrapper>
     );
   }
 
+  /* ── QUESTIONS ───────────────────────────────── */
   return (
     <PageWrapper style={{ padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <div style={{ width: '100%', maxWidth: 640 }}>
@@ -119,9 +191,13 @@ export default function ScreeningPage() {
         {/* Nav */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32 }}>
           <Btn variant="outline" onClick={() => setStep(s => s - 1)}>← Back</Btn>
-          <Btn onClick={() => setStep(s => s + 1)} disabled={!allAnswered}>
-            {step === 5 ? 'Submit & Analyze' : 'Next →'}
-          </Btn>
+          {step < 5 ? (
+            <Btn onClick={() => setStep(s => s + 1)} disabled={!allAnswered}>Next →</Btn>
+          ) : (
+            <Btn onClick={submitScreening} disabled={!allAnswered || analyzing}>
+              {analyzing ? 'Submitting…' : 'Submit & Analyze 🧠'}
+            </Btn>
+          )}
         </div>
       </div>
     </PageWrapper>
