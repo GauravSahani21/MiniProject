@@ -31,6 +31,23 @@ const ChildSchema = new mongoose.Schema({
   medicalNotes: {
     type: String
   },
+  // Snapshot fields updated after each completed screening.
+  lastScreen: {
+    type: Date
+  },
+  risk: {
+    type: String,
+    enum: ['Low', 'Medium', 'High']
+  },
+  score: {
+    type: Number,
+    min: 0,
+    max: 20
+  },
+  total: {
+    type: Number,
+    default: 20
+  },
   isActive: {
     type: Boolean,
     default: true

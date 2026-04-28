@@ -32,7 +32,7 @@ const MCHAT_QUESTIONS = [
 // @access  Private (parent)
 export const createScreening = async (req, res, next) => {
   try {
-    const { childId, answers, mlPrediction } = req.body;
+    const { childId, answers, mlPrediction, status } = req.body;
 
     // Validate child belongs to this parent
     const child = await Child.findOne({ _id: childId, parentId: req.user._id });
@@ -49,7 +49,8 @@ export const createScreening = async (req, res, next) => {
     const flaggedQuestions = [];
     const fullAnswers = [];
 
-    answers.forEach((ans, index) => {
+    answers.forEach((rawAnswer, index) => {
+      const ans = typeof rawAnswer === 'boolean' ? rawAnswer : rawAnswer === 1 || rawAnswer === '1';
       let isRisk = false;
       // Questions 0-9: risk if answer = false
       if (index <= 9) {
@@ -106,7 +107,16 @@ export const createScreening = async (req, res, next) => {
       riskPercentage,
       categories,
       flaggedQuestions,
-      mlPrediction
+      mlPrediction,
+      status: status === 'pending' ? 'pending' : 'completed'
+    });
+
+    // Keep the child card/dashboard snapshot fields in sync.
+    await Child.findByIdAndUpdate(childId, {
+      lastScreen: screening.screeningDate,
+      risk: riskLevel,
+      score,
+      total: 20
     });
 
     // Auto-create Report document

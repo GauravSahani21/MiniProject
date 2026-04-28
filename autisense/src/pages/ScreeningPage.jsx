@@ -1,31 +1,62 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageWrapper, Card, Btn, Select } from '../components/UI';
-import { CHILDREN, MCHAT_QUESTIONS } from '../data/dummyData';
+import { MCHAT_QUESTIONS } from '../data/dummyData';
 import { useScreening } from '../context/ScreeningContext';
 import { predictAutism } from '../services/api';
+import { children as childrenApi, screenings as screeningsApi } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 export default function ScreeningPage() {
   const { childId } = useParams();
-  const navigate    = useNavigate();
+  const navigate = useNavigate();
   const { setResult } = useScreening();
+  const { token } = useAuth();
 
-  const [step, setStep]               = useState(0); // 0=pre, 1-5=questions, 6=analyzing
-  const [selectedChildId, setSelectedChildId] = useState(
-    childId ? parseInt(childId) : (CHILDREN[0]?.id || '')
-  );
-  const [answers, setAnswers]         = useState({});
-  const [apiError, setApiError]       = useState('');
-  const [analyzing, setAnalyzing]     = useState(false);
+  const [step, setStep] = useState(0); // 0=pre, 1-5=questions, 6=analyzing
+  const [selectedChildId, setSelectedChildId] = useState(childId || '');
+  const [children, setChildren] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  const [answers, setAnswers] = useState({});
+  const [apiError, setApiError] = useState('');
+  const [analyzing, setAnalyzing] = useState(false);
 
-  const selectedChild = CHILDREN.find(c => c.id === Number(selectedChildId)) || CHILDREN[0];
+  useEffect(() => {
+    const fetchChildren = async () => {
+      try {
+        const res = await childrenApi.getAll(token);
+        const childrenList = res.data || [];
+        setChildren(childrenList);
+        
+        // Auto-select child
+        if (!childId && childrenList.length > 0) {
+          setSelectedChildId(childrenList[0]._id);
+        } else if (childId) {
+          setSelectedChildId(childId);
+        }
+      } catch (err) {
+        console.error('Failed to load children:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (token) fetchChildren();
+  }, [token, childId]);
 
-  /* ── Convert answers dict to ordered 0/1 array ── */
-  function buildAnswerArray() {
+  const selectedChild = children.find(c => c._id === selectedChildId) || children[0];
+
+  /* ── Convert answers dict to ordered 0/1 array for ML API ── */
+  function buildMlAnswerArray() {
     return MCHAT_QUESTIONS.map(q => {
       const raw = answers[q.id]; // 'yes' | 'no'
       return raw === 'yes' ? 1 : 0;
     });
+  }
+
+  /* ── Convert answers dict to ordered boolean array for DB/API ── */
+  function buildBooleanAnswerArray() {
+    return MCHAT_QUESTIONS.map(q => answers[q.id] === 'yes');
   }
 
   /* ── Submit to Flask API ─────────────────────── */
@@ -34,20 +65,49 @@ export default function ScreeningPage() {
     setApiError('');
     setStep(6);
 
-    const answerArray = buildAnswerArray();
+    const answerArray = buildMlAnswerArray();
+    const booleanAnswers = buildBooleanAnswerArray();
     const childPayload = {
       name:   selectedChild.name,
-      age:    selectedChild.age,
-      gender: selectedChild.gender?.toLowerCase().startsWith('b') ? 'm' : 'f',
+      age:    selectedChild.age || (selectedChild.dob ? new Date().getFullYear() - new Date(selectedChild.dob).getFullYear() : 3),
+      gender: selectedChild.gender?.toLowerCase().startsWith('m') || selectedChild.gender?.toLowerCase().startsWith('b') ? 'm' : 'f',
     };
 
     try {
       const data = await predictAutism(answerArray, childPayload);
+      const normalizedRisk = data.riskLevel || data.risk || 'Low';
+      const normalizedScore =
+        typeof data.score === 'number'
+          ? data.score
+          : answerArray.reduce((sum, a, i) => sum + ((i < 10 && a === 0) || (i >= 10 && a === 1) ? 1 : 0), 0);
+      const normalizedProbability =
+        typeof data.probability === 'number'
+          ? data.probability
+          : Math.round((normalizedScore / 20) * 100);
+
+      await screeningsApi.create({
+        childId: selectedChildId,
+        answers: booleanAnswers,
+        score: normalizedScore,
+        riskLevel: normalizedRisk,
+        probability: normalizedProbability,
+        recommendations: data.recommendations || [],
+        status: 'pending',
+        date: new Date().toISOString(),
+        mlPrediction: {
+          prediction: data.prediction ?? (normalizedRisk === 'Low' ? 0 : 1),
+          probability: normalizedProbability
+        }
+      }, token);
+
       setResult({
         child:       selectedChild,
-        answers:     answerArray,
+        answers:     booleanAnswers,
         screened_at: new Date().toISOString(),
         ...data,
+        risk: normalizedRisk,
+        score: normalizedScore,
+        probability: normalizedProbability
       });
       navigate('/result');
     } catch (err) {
@@ -56,28 +116,51 @@ export default function ScreeningPage() {
       const score = answerArray.reduce((sum, a, i) =>
         sum + ((i < 10 && a === 0) || (i >= 10 && a === 1) ? 1 : 0), 0);
       const risk  = score <= 6 ? 'Low' : score <= 13 ? 'Medium' : 'High';
-      setResult({
-        child:       selectedChild,
-        answers:     answerArray,
-        screened_at: new Date().toISOString(),
-        prediction:  risk !== 'Low' ? 1 : 0,
-        probability: Math.round((score / 20) * 100),
-        risk,
-        score,
-        total:       20,
-        categories: {
-          Social:        parseFloat((answerArray.slice(0, 4).filter(a => a === 0).length / 4).toFixed(2)),
-          Communication: parseFloat((answerArray.slice(4, 8).filter(a => a === 0).length / 4).toFixed(2)),
-          Behavior:      parseFloat(([...answerArray.slice(8,10).map(a=>1-a), ...answerArray.slice(10,12)].reduce((s,v)=>s+v,0) / 4).toFixed(2)),
-          Sensory:       parseFloat((answerArray.slice(12, 16).reduce((s, v) => s + v, 0) / 4).toFixed(2)),
-          Routine:       parseFloat(([...answerArray.slice(16,19), 1 - answerArray[19]].reduce((s,v)=>s+v,0) / 4).toFixed(2)),
-        },
-        flagged: MCHAT_QUESTIONS
-          .filter((q, i) => (i < 10 && answerArray[i] === 0) || (i >= 10 && answerArray[i] === 1))
-          .map(q => `Question ${q.id}`),
-        _offline: true,
-      });
-      navigate('/result');
+      const probability = Math.round((score / 20) * 100);
+      try {
+        await screeningsApi.create({
+          childId: selectedChildId,
+          answers: booleanAnswers,
+          score,
+          riskLevel: risk,
+          probability,
+          recommendations: [],
+          status: 'pending',
+          date: new Date().toISOString(),
+          mlPrediction: {
+            prediction: risk !== 'Low' ? 1 : 0,
+            probability
+          }
+        }, token);
+
+        setResult({
+          child:       selectedChild,
+          answers:     booleanAnswers,
+          screened_at: new Date().toISOString(),
+          prediction:  risk !== 'Low' ? 1 : 0,
+          probability,
+          risk,
+          score,
+          total:       20,
+          categories: {
+            Social:        parseFloat((answerArray.slice(0, 4).filter(a => a === 0).length / 4).toFixed(2)),
+            Communication: parseFloat((answerArray.slice(4, 8).filter(a => a === 0).length / 4).toFixed(2)),
+            Behavior:      parseFloat(([...answerArray.slice(8,10).map(a=>1-a), ...answerArray.slice(10,12)].reduce((s,v)=>s+v,0) / 4).toFixed(2)),
+            Sensory:       parseFloat((answerArray.slice(12, 16).reduce((s, v) => s + v, 0) / 4).toFixed(2)),
+            Routine:       parseFloat(([...answerArray.slice(16,19), 1 - answerArray[19]].reduce((s,v)=>s+v,0) / 4).toFixed(2)),
+          },
+          flagged: MCHAT_QUESTIONS
+            .filter((q, i) => (i < 10 && answerArray[i] === 0) || (i >= 10 && answerArray[i] === 1))
+            .map(q => `Question ${q.id}`),
+          _offline: true,
+        });
+        navigate('/result');
+      } catch (saveErr) {
+        console.error('Failed to save screening:', saveErr);
+        setApiError('Screening could not be saved. Please try again.');
+        setAnalyzing(false);
+        setStep(5);
+      }
     }
   }
 
@@ -85,6 +168,32 @@ export default function ScreeningPage() {
 
   const currentQuestions = MCHAT_QUESTIONS.filter(q => q.step === step - 1);
   const allAnswered = currentQuestions.every(q => answers[q.id] !== undefined);
+
+  if (loading) {
+    return (
+      <PageWrapper style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
+        <p>Loading children...</p>
+      </PageWrapper>
+    );
+  }
+
+  /* ── NO CHILDREN EMPTY STATE ─────────────────── */
+  if (children.length === 0) {
+    return (
+      <PageWrapper style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
+        <Card className="animate-fadeInUp" style={{ maxWidth: 500, width: '100%', padding: '36px 32px', textAlign: 'center' }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>👶</div>
+          <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.4rem', color: 'var(--dark)' }}>No children added yet</h2>
+          <p style={{ fontSize: '0.9rem', color: 'var(--muted)', marginTop: 8, marginBottom: 24 }}>
+            Please add a child first to start the screening process.
+          </p>
+          <Btn size="lg" style={{ width: '100%' }} onClick={() => navigate('/add-child')}>
+            Add Child
+          </Btn>
+        </Card>
+      </PageWrapper>
+    );
+  }
 
   /* ── PRE-SCREEN ──────────────────────────────── */
   if (step === 0) {
@@ -98,7 +207,7 @@ export default function ScreeningPage() {
           </div>
 
           <Select label="Select Child" value={selectedChildId} onChange={e => setSelectedChildId(e.target.value)}>
-            {CHILDREN.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {children.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
           </Select>
 
           <div style={{ background: 'var(--orange-pale)', padding: 16, borderRadius: 'var(--radius-sm)', marginTop: 24, fontSize: '0.85rem', color: 'var(--dark)', border: '1px solid var(--border)' }}>
@@ -199,6 +308,11 @@ export default function ScreeningPage() {
             </Btn>
           )}
         </div>
+        {apiError && (
+          <p style={{ marginTop: 14, fontSize: '0.85rem', color: 'var(--red)', fontWeight: 600 }}>
+            {apiError}
+          </p>
+        )}
       </div>
     </PageWrapper>
   );
