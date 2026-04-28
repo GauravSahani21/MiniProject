@@ -49,6 +49,10 @@ export const screenings = {
   getOne: (id, token) => apiCall(`/screenings/${id}`, 'GET', null, token)
 };
 
+export const trajectory = {
+  getByChild: (childId, token) => apiCall(`/trajectory/${childId}`, 'GET', null, token)
+};
+
 export const reports = {
   getAll: (token) => apiCall('/reports', 'GET', null, token),
   getOne: (screeningId, token) => apiCall(`/reports/${screeningId}`, 'GET', null, token),
