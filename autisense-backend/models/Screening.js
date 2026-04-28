@@ -11,6 +11,11 @@ const ScreeningSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  doctorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
   answers: [{
     questionId: {
       type: Number,
@@ -59,8 +64,8 @@ const ScreeningSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['completed', 'pending'],
-    default: 'completed'
+    enum: ['pending', 'reviewed', 'completed'],
+    default: 'pending'
   },
   reviewedBy: {
     type: mongoose.Schema.ObjectId,

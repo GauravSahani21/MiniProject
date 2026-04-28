@@ -21,11 +21,12 @@ export const getChildren = async (req, res, next) => {
 };
 
 // @desc    Get single child
-// @route   GET /api/children/:id
+// @route   GET /api/children/:childId
 // @access  Private (parent)
 export const getChild = async (req, res, next) => {
   try {
-    const child = await Child.findOne({ _id: req.params.id, parentId: req.user._id, isActive: true });
+    const childId = req.params.childId || req.params.id;
+    const child = await Child.findOne({ _id: childId, parentId: req.user.id, isActive: true });
 
     if (!child) {
       return res.status(404).json({ success: false, error: 'Child not found' });
@@ -59,11 +60,12 @@ export const createChild = async (req, res, next) => {
 };
 
 // @desc    Update child
-// @route   PUT /api/children/:id
+// @route   PUT /api/children/:childId
 // @access  Private (parent)
 export const updateChild = async (req, res, next) => {
   try {
-    let child = await Child.findOne({ _id: req.params.id, parentId: req.user._id });
+    const childId = req.params.childId || req.params.id;
+    let child = await Child.findOne({ _id: childId, parentId: req.user.id });
 
     if (!child) {
       return res.status(404).json({ success: false, error: 'Child not found' });
@@ -71,7 +73,7 @@ export const updateChild = async (req, res, next) => {
 
     const { name, dob, gender, guardian, medicalNotes } = req.body;
     child = await Child.findByIdAndUpdate(
-      req.params.id,
+      childId,
       { name, dob, gender, guardian, medicalNotes },
       { new: true, runValidators: true }
     );
@@ -86,11 +88,12 @@ export const updateChild = async (req, res, next) => {
 };
 
 // @desc    Delete child (Soft delete)
-// @route   DELETE /api/children/:id
+// @route   DELETE /api/children/:childId
 // @access  Private (parent)
 export const deleteChild = async (req, res, next) => {
   try {
-    const child = await Child.findOne({ _id: req.params.id, parentId: req.user._id });
+    const childId = req.params.childId || req.params.id;
+    const child = await Child.findOne({ _id: childId, parentId: req.user.id });
 
     if (!child) {
       return res.status(404).json({ success: false, error: 'Child not found' });
@@ -109,17 +112,18 @@ export const deleteChild = async (req, res, next) => {
 };
 
 // @desc    Get screenings for a specific child
-// @route   GET /api/children/:id/screenings
+// @route   GET /api/children/:childId/screenings
 // @access  Private (parent)
 export const getChildScreenings = async (req, res, next) => {
   try {
+    const childId = req.params.childId || req.params.id;
     // Verify ownership
-    const child = await Child.findOne({ _id: req.params.id, parentId: req.user._id });
+    const child = await Child.findOne({ _id: childId, parentId: req.user.id });
     if (!child) {
       return res.status(404).json({ success: false, error: 'Child not found' });
     }
 
-    const screenings = await Screening.find({ childId: req.params.id }).sort({ screeningDate: -1 });
+    const screenings = await Screening.find({ childId }).sort({ screeningDate: -1 });
 
     res.status(200).json({
       success: true,

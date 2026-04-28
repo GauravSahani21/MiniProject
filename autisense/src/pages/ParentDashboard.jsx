@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { children as childrenApi, screenings as screeningsApi } from '../api';
+import { children as childrenApi, screenings as screeningsApi, trajectory as trajectoryApi } from '../api';
 import { PageWrapper, SectionHeading, StatCard, Card, Btn, Badge, ScoreBar, Modal, useToast, EmptyState } from '../components/UI';
+import RiskTrajectoryChart, { trendMeta } from '../components/RiskTrajectoryChart';
 
 export default function ParentDashboard() {
   const { user, token } = useAuth();
@@ -12,6 +13,10 @@ export default function ParentDashboard() {
   const [children, setChildren] = useState([]);
   const [allScreenings, setAllScreenings] = useState([]);
   const [recentScreenings, setRecentScreenings] = useState([]);
+  const [expandedChildId, setExpandedChildId] = useState(null);
+  const [trajectoryByChild, setTrajectoryByChild] = useState({});
+  const [loadingTrajectoryByChild, setLoadingTrajectoryByChild] = useState({});
+  const [trajectoryErrorByChild, setTrajectoryErrorByChild] = useState({});
   const [deleteModal, setDeleteModal] = useState(null);
 
   useEffect(() => {
@@ -57,6 +62,29 @@ export default function ParentDashboard() {
       setDeleteModal(null);
     } catch (err) {
       showToast('Failed to remove child', 'error');
+    }
+  };
+
+  const toggleTrajectory = async (childId) => {
+    if (expandedChildId === childId) {
+      setExpandedChildId(null);
+      return;
+    }
+
+    setExpandedChildId(childId);
+    setTrajectoryErrorByChild((prev) => ({ ...prev, [childId]: '' }));
+    if (trajectoryByChild[childId]) return;
+
+    try {
+      setLoadingTrajectoryByChild((prev) => ({ ...prev, [childId]: true }));
+      const res = await trajectoryApi.getTrajectory(childId, token);
+      setTrajectoryByChild((prev) => ({ ...prev, [childId]: res.data }));
+    } catch (err) {
+      const message = err?.message || 'Failed to load risk trajectory';
+      setTrajectoryErrorByChild((prev) => ({ ...prev, [childId]: message }));
+      showToast(message, 'error');
+    } finally {
+      setLoadingTrajectoryByChild((prev) => ({ ...prev, [childId]: false }));
     }
   };
 
@@ -149,8 +177,71 @@ export default function ParentDashboard() {
                 <div style={{ display: 'flex', gap: 10 }}>
                   <Btn variant="primary" style={{ flex: 1 }} onClick={() => navigate(`/screening/${c._id}`)}>Screen Now</Btn>
                   <Btn variant="outline" style={{ flex: 1 }} onClick={() => navigate(`/report?childId=${c._id}`)}>View Reports</Btn>
+                  <Btn variant="ghost" onClick={() => toggleTrajectory(c._id)}>
+                    {expandedChildId === c._id ? 'Hide Trend' : 'Risk Trend'}
+                  </Btn>
                   <Btn variant="ghost" onClick={() => navigate(`/parent/child/${c._id}/details`)}>Details</Btn>
                 </div>
+
+                {expandedChildId === c._id && (
+                  <div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+                    {loadingTrajectoryByChild[c._id] ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--muted)', fontSize: '0.85rem' }}>
+                        <div className="animate-spin" style={{ width: 16, height: 16, border: '2px solid #fde68a', borderTopColor: '#f59e0b', borderRadius: '50%' }} />
+                        <span>Loading trajectory...</span>
+                      </div>
+                    ) : trajectoryByChild[c._id] ? (
+                      <>
+                        <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--dark)' }}>
+                            Longitudinal Risk Trajectory
+                          </h4>
+                          {(() => {
+                            const trend = trendMeta(trajectoryByChild[c._id]?.trend);
+                            return (
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  gap: 6,
+                                  alignItems: 'center',
+                                  padding: '5px 9px',
+                                  borderRadius: 999,
+                                  background: trend.bg,
+                                  color: trend.color,
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                }}
+                              >
+                                <span>{trend.icon}</span>
+                                <span>{trend.label}</span>
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        <RiskTrajectoryChart trajectoryData={trajectoryByChild[c._id]} height={220} />
+                      </>
+                    ) : trajectoryErrorByChild[c._id] ? (
+                      <p style={{ fontSize: '0.85rem', color: 'var(--red)' }}>
+                        Unable to load trajectory right now. Please try again.
+                      </p>
+                    ) : (
+                      (() => {
+                        const screeningCount = allScreenings.filter(
+                          (s) => String(s.childId?._id || s.childId) === String(c._id)
+                        ).length;
+                        return screeningCount === 0 ? (
+                          <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+                            Trajectory data not available yet.
+                          </p>
+                        ) : (
+                          <p style={{ fontSize: '0.85rem', color: 'var(--orange)' }}>
+                            Screening data exists. Click Risk Trend again to retry loading chart.
+                          </p>
+                        );
+                      })()
+                    )}
+                  </div>
+                )}
               </Card>
             ))}
           </div>

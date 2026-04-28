@@ -1,38 +1,42 @@
-import Report from '../models/Report.js';
 import Screening from '../models/Screening.js';
+import Child from '../models/Child.js';
 
 // All routes here are protected and authorized for 'doctor'
 
-// @desc    Get assigned patients
+// @desc    Get patients/screenings queue for doctor dashboard
 // @route   GET /api/doctor/patients
 // @access  Private (doctor)
 export const getAssignedPatients = async (req, res, next) => {
   try {
-    const reports = await Report.find({ sharedDoctorId: req.user._id })
-      .populate('childId')
-      .populate('parentId', 'name email phone');
+    // Option B: show all screenings to all doctors for review.
+    const screenings = await Screening.find({
+      status: { $in: ['pending', 'reviewed', 'completed'] }
+    })
+      .populate('childId', 'name dob gender')
+      .populate('parentId', 'name email')
+      .sort({ screeningDate: -1 });
 
-    // Group by child
-    const patientsMap = new Map();
-    reports.forEach(report => {
-      const childId = report.childId._id.toString();
-      if (!patientsMap.has(childId)) {
-        patientsMap.set(childId, {
-          child: report.childId,
-          parent: report.parentId,
-          reports: []
-        });
-      }
-      patientsMap.get(childId).reports.push({
-        reportId: report._id,
-        screeningId: report.screeningId,
-        riskLevel: report.riskLevel,
-        score: report.score,
-        date: report.createdAt
-      });
+    const patientsArray = screenings.map((s) => {
+      const childDob = s.childId?.dob ? new Date(s.childId.dob) : null;
+      const childAge = childDob
+        ? Math.max(0, new Date().getFullYear() - childDob.getFullYear())
+        : null;
+
+      return {
+        screeningId: s._id,
+        childId: s.childId?._id || null,
+        childName: s.childId?.name || 'Unknown Child',
+        childAge,
+        childGender: s.childId?.gender || null,
+        parentName: s.parentId?.name || 'Unknown Parent',
+        parentEmail: s.parentId?.email || null,
+        date: s.screeningDate || s.createdAt,
+        score: s.score,
+        riskLevel: s.riskLevel,
+        status: s.status,
+        answers: s.answers
+      };
     });
-
-    const patientsArray = Array.from(patientsMap.values());
 
     res.status(200).json({
       success: true,
@@ -44,22 +48,19 @@ export const getAssignedPatients = async (req, res, next) => {
   }
 };
 
-// @desc    Get screenings for an assigned patient
+// @desc    Get screenings for a patient (child)
 // @route   GET /api/doctor/patients/:childId/screenings
 // @access  Private (doctor)
 export const getPatientScreenings = async (req, res, next) => {
   try {
-    // Ensure the doctor has at least one shared report for this child
-    const report = await Report.findOne({ 
-      sharedDoctorId: req.user._id, 
-      childId: req.params.childId 
-    });
-
-    if (!report) {
-      return res.status(403).json({ success: false, error: 'Not authorized to view this patient' });
+    const child = await Child.findById(req.params.childId);
+    if (!child) {
+      return res.status(404).json({ success: false, error: 'Child not found' });
     }
 
     const screenings = await Screening.find({ childId: req.params.childId })
+      .populate('childId', 'name dob gender')
+      .populate('parentId', 'name email')
       .sort({ screeningDate: -1 });
 
     res.status(200).json({
@@ -85,18 +86,33 @@ export const addRemarks = async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Screening not found' });
     }
 
-    // Verify report is shared with this doctor
-    const report = await Report.findOne({ screeningId: req.params.id, sharedDoctorId: req.user._id });
-    if (!report) {
-      return res.status(403).json({ success: false, error: 'Not authorized' });
-    }
-
     screening.doctorRemarks = remarks;
     screening.reviewedBy = req.user._id;
-    if (screening.status === 'pending') {
-      screening.status = 'completed';
+    if (screening.status === 'pending') screening.status = 'reviewed';
+
+    await screening.save();
+
+    res.status(200).json({
+      success: true,
+      data: screening
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Mark screening as reviewed
+// @route   PUT /api/doctor/screenings/:screeningId/review
+// @access  Private (doctor)
+export const markScreeningReviewed = async (req, res, next) => {
+  try {
+    const screening = await Screening.findById(req.params.screeningId);
+    if (!screening) {
+      return res.status(404).json({ success: false, error: 'Screening not found' });
     }
 
+    screening.status = 'reviewed';
+    screening.reviewedBy = req.user._id;
     await screening.save();
 
     res.status(200).json({
@@ -113,17 +129,10 @@ export const addRemarks = async (req, res, next) => {
 // @access  Private (doctor)
 export const getDoctorStats = async (req, res, next) => {
   try {
-    const reports = await Report.find({ sharedDoctorId: req.user._id });
-
-    const totalPatients = new Set(reports.map(r => r.childId.toString())).size;
-    const highRisk = reports.filter(r => r.riskLevel === 'High').length;
-    
-    // Check corresponding screenings for pending status
-    const screeningIds = reports.map(r => r.screeningId);
-    const pendingReviews = await Screening.countDocuments({
-      _id: { $in: screeningIds },
-      status: 'pending'
-    });
+    const screenings = await Screening.find().select('childId riskLevel status');
+    const totalPatients = new Set(screenings.map(s => s.childId.toString())).size;
+    const highRisk = screenings.filter(s => s.riskLevel === 'High').length;
+    const pendingReviews = screenings.filter(s => s.status === 'pending').length;
 
     res.status(200).json({
       success: true,

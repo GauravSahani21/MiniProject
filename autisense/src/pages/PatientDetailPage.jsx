@@ -1,94 +1,112 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageWrapper, Card, Badge, Btn, useToast } from '../components/UI';
-import { useDoctor } from '../context/DoctorContext';
-import { SCREENING_HISTORY, CATEGORIES } from '../data/dummyData';
+import { useAuth } from '../context/AuthContext';
+import { trajectory as trajectoryApi, doctor as doctorApi } from '../api';
+import RiskTrajectoryChart, { trendMeta } from '../components/RiskTrajectoryChart';
 
 export default function PatientDetailPage() {
-  const { id }        = useParams();
+  const { id: childId } = useParams();
   const navigate      = useNavigate();
   const { showToast, ToastComponent } = useToast();
-  const [tab, setTab] = useState('report'); // 'report' | 'notes' | 'history'
-  const [saving, setSaving]   = useState(false);
+  const { token } = useAuth();
+  const [tab, setTab] = useState('report');
+  const [screenings, setScreenings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [trajectoryData, setTrajectoryData] = useState(null);
+  const [loadingTrajectory, setLoadingTrajectory] = useState(false);
+  const [remarks, setRemarks] = useState('');
 
-  // ── BUG 3 FIX: read patient from shared DoctorContext, not from PATIENTS array ──
-  // Previously this page called: const patient = PATIENTS.find(...)
-  // and kept its own local copy via useState(patient.status).
-  // When the doctor clicked "Mark as Reviewed" only the local copy changed.
-  // Going back to the dashboard re-read the original PATIENTS array → still Pending.
-  //
-  // Fix: read from DoctorContext (same source as DoctorDashboard) and call
-  // the shared markReviewed() action so both pages see the same status.
-  const { patients, markReviewed } = useDoctor();
-  const patient = patients.find(p => p.id === parseInt(id)) || patients[0];
+  useEffect(() => {
+    const fetchScreenings = async () => {
+      if (!token || !childId) return;
+      try {
+        setLoading(true);
+        const res = await doctorApi.getScreenings(childId, token);
+        setScreenings(res.data || []);
+      } catch (err) {
+        showToast(err?.message || 'Failed to load patient screenings', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchScreenings();
+  }, [token, childId]);
 
-  // Derive status from shared state — no local copy needed
-  const isReviewed = patient?.status === 'Reviewed';
+  useEffect(() => {
+    const fetchTrajectory = async () => {
+      if (!token || !childId) return;
+      try {
+        setLoadingTrajectory(true);
+        const res = await trajectoryApi.getByChild(childId, token);
+        setTrajectoryData(res.data);
+      } catch (err) {
+        setTrajectoryData(null);
+      } finally {
+        setLoadingTrajectory(false);
+      }
+    };
+    fetchTrajectory();
+  }, [token, childId]);
 
-  const [remarks, setRemarks] = useState(patient?.remarks || '');
-
-  // Past history for this patient
-  const history = SCREENING_HISTORY.filter(h => h.child === patient?.name);
-  if (history.length === 0 && patient) {
-    history.push({
-      id: 99,
-      date:   patient.date,
-      score:  patient.score,
-      total:  20,
-      risk:   patient.risk,
-      status: patient.status,
-      child:  patient.name,
-    });
-  }
+  const latestScreening = screenings[0] || null;
+  const patient = useMemo(() => {
+    if (!latestScreening) return null;
+    const child = latestScreening.childId || {};
+    const dob = child.dob ? new Date(child.dob) : null;
+    const age = dob ? Math.max(0, new Date().getFullYear() - dob.getFullYear()) : '--';
+    return {
+      name: child.name || 'Unknown Child',
+      age,
+      risk: latestScreening.riskLevel || 'Low',
+      date: latestScreening.screeningDate || latestScreening.createdAt,
+      score: latestScreening.score || 0,
+      status: latestScreening.status || 'pending',
+    };
+  }, [latestScreening]);
 
   const handleSave = () => {
-    setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
-      showToast('Clinical notes saved successfully.', 'success');
-    }, 800);
+    showToast('Clinical notes saved locally.', 'success');
   };
 
-  // ── BUG 3 FIX: write through to DoctorContext ─────────────────────────────
-  const handleMarkReviewed = () => {
-    markReviewed(patient.id);   // updates shared state + persists to localStorage
-    showToast('Report marked as reviewed.', 'success');
+  const handleMarkReviewed = async () => {
+    if (!latestScreening) return;
+    try {
+      await doctorApi.markReviewed(latestScreening._id, token);
+      setScreenings(prev =>
+        prev.map((s) =>
+          s._id === latestScreening._id ? { ...s, status: 'reviewed' } : s
+        )
+      );
+      showToast('Report marked as reviewed.', 'success');
+    } catch (err) {
+      showToast(err?.message || 'Failed to mark reviewed', 'error');
+    }
   };
-
-  const catScores = { social: 3, comm: 3, behavior: 2, sensory: 2, routine: 1 };
-
-  if (!patient) {
+  if (loading) {
     return (
       <PageWrapper>
         <div style={{ padding: '80px 24px', textAlign: 'center', color: 'var(--muted)' }}>
-          Patient not found.{' '}
-          <button
-            onClick={() => navigate('/doctor')}
-            style={{ color: 'var(--orange)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            Go back
-          </button>
+          Loading patient details...
         </div>
       </PageWrapper>
     );
   }
+  if (!patient) {
+    return (
+      <PageWrapper>
+        <div style={{ padding: '80px 24px', textAlign: 'center', color: 'var(--muted)' }}>
+          Patient not found.
+        </div>
+      </PageWrapper>
+    );
+  }
+  const isReviewed = String(patient.status).toLowerCase() === 'reviewed';
 
   return (
-    // ── BUG 1 FIX ────────────────────────────────────────────────────────────
-    // Old code: <PageWrapper style={{ padding: '40px 24px' }}>
-    //   The inline padding: '40px 24px' overrides the PageWrapper's default
-    //   paddingTop: 88px down to only 40px. Since the fixed navbar is 68px tall,
-    //   the top 28px of page content (including the Back button) slides behind it.
-    //
-    // Fix: remove the conflicting padding shorthand and use paddingBottom only.
-    //   PageWrapper still adds paddingTop: 88px (from its own style object) which
-    //   correctly clears the fixed navbar. We add paddingBottom + paddingInline
-    //   separately so the horizontal and bottom spacing is preserved.
     <PageWrapper style={{ paddingBottom: 40, paddingInline: 24 }}>
       {ToastComponent}
       <div className="container" style={{ maxWidth: 860 }}>
-
-        {/* ── BUG 1 FIX: Back button now visible — no longer hidden behind navbar ── */}
         <button
           onClick={() => navigate('/doctor')}
           style={{
@@ -162,9 +180,8 @@ export default function PatientDetailPage() {
               Score: {patient.score}/20
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12 }}>
-              {/* ── BUG 3 FIX: status reads from shared context, updates everywhere ── */}
               <span className={`status-pill ${patient.status.toLowerCase()}`}>
-                {isReviewed ? '✅' : patient.status === 'Pending' ? '⏳' : '🔴'} {patient.status}
+                {isReviewed ? '✅' : patient.status === 'pending' ? '⏳' : '✅'} {patient.status}
               </span>
               {!isReviewed && (
                 <Btn size="sm" variant="success" onClick={handleMarkReviewed}>
@@ -201,65 +218,56 @@ export default function PatientDetailPage() {
 
           {/* ── Tab: Screening Report ── */}
           {tab === 'report' && (
-            <div className="grid-2">
-              <Card style={{ padding: 24 }}>
-                <h3 style={{
-                  fontFamily:   'var(--font-heading)',
-                  fontWeight:   800,
-                  fontSize:     '1.1rem',
-                  marginBottom: 20,
-                }}>
-                  Category Breakdown
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {CATEGORIES.map(c => {
-                    const s   = catScores[c.key] ?? 0;
-                    const pct = c.max > 0 ? (s / c.max) * 100 : 0;
-                    const col = pct <= 33 ? 'var(--green)' : pct <= 66 ? 'var(--amber)' : 'var(--red)';
+            <>
+              <Card style={{ padding: 24, marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <h3 style={{ margin: 0, fontFamily: 'var(--font-heading)', fontSize: '1.05rem', fontWeight: 800 }}>
+                    Longitudinal Risk Trajectory
+                  </h3>
+                  {trajectoryData && (() => {
+                    const trend = trendMeta(trajectoryData.trend);
                     return (
-                      <div key={c.key}>
-                        <div style={{
-                          display:        'flex',
-                          justifyContent: 'space-between',
-                          fontSize:       '0.8rem',
-                          fontWeight:     600,
-                          color:          'var(--dark)',
-                          marginBottom:   6,
-                        }}>
-                          <span>{c.label}</span>
-                          <span>{s}/{c.max}</span>
-                        </div>
-                        <div style={{ height: 6, background: 'var(--border)', borderRadius: 4 }}>
-                          <div style={{ width: `${pct}%`, height: '100%', background: col, borderRadius: 4 }} />
-                        </div>
-                      </div>
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          background: trend.bg,
+                          color: trend.color,
+                          borderRadius: 'var(--radius-full)',
+                          padding: '5px 10px',
+                          fontWeight: 700,
+                          fontSize: '0.78rem',
+                        }}
+                      >
+                        <span>{trend.icon}</span>
+                        <span>{trend.label}</span>
+                      </span>
                     );
-                  })}
+                  })()}
+                </div>
+                {loadingTrajectory ? (
+                  <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>Loading trajectory...</p>
+                ) : trajectoryData ? (
+                  <RiskTrajectoryChart trajectoryData={trajectoryData} height={240} />
+                ) : (
+                  <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+                    Trajectory is unavailable for this patient right now.
+                  </p>
+                )}
+              </Card>
+              <Card style={{ padding: 24 }}>
+                <h3 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.1rem', marginBottom: 16 }}>
+                  Screening Snapshot
+                </h3>
+                <div style={{ fontSize: '0.88rem', lineHeight: 1.8 }}>
+                  <div><strong>Latest score:</strong> {patient.score}/20</div>
+                  <div><strong>Risk level:</strong> {patient.risk}</div>
+                  <div><strong>Status:</strong> {patient.status}</div>
+                  <div><strong>Total screenings:</strong> {screenings.length}</div>
                 </div>
               </Card>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                <Card style={{ padding: 24 }}>
-                  <h3 style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--red)', marginBottom: 12 }}>
-                    ⚠️ Flagged Concerns
-                  </h3>
-                  <ul style={{ paddingLeft: 20, fontSize: '0.85rem', color: 'var(--mid)', lineHeight: 1.6 }}>
-                    <li>Did not respond to name</li>
-                    <li>Avoids eye contact</li>
-                    <li>Repetitive hand flapping observed</li>
-                  </ul>
-                </Card>
-                <Card style={{ padding: 24, flex: 1 }}>
-                  <h3 style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--green)', marginBottom: 12 }}>
-                    ✅ Strengths
-                  </h3>
-                  <ul style={{ paddingLeft: 20, fontSize: '0.85rem', color: 'var(--mid)', lineHeight: 1.6 }}>
-                    <li>Smiles back when smiled at</li>
-                    <li>Follows simple pointing</li>
-                  </ul>
-                </Card>
-              </div>
-            </div>
+            </>
           )}
 
           {/* ── Tab: Clinical Notes ── */}
@@ -281,39 +289,9 @@ export default function PatientDetailPage() {
                   placeholder="Type your clinical observations and recommendations here..."
                   style={{ minHeight: 180, marginBottom: 16 }}
                 />
-                <Btn onClick={handleSave} disabled={saving} style={{ width: '100%' }}>
-                  {saving ? 'Saving...' : 'Save Remarks'}
+                <Btn onClick={handleSave} style={{ width: '100%' }}>
+                  Save Remarks
                 </Btn>
-              </Card>
-
-              <Card style={{ padding: 24 }}>
-                <h3 style={{
-                  fontFamily:   'var(--font-heading)',
-                  fontWeight:   800,
-                  fontSize:     '1.1rem',
-                  marginBottom: 16,
-                }}>
-                  Previous Notes
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <div style={{ borderLeft: '3px solid var(--orange)', paddingLeft: 12 }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 700, marginBottom: 4 }}>
-                      12 Oct 2024 (Last Visit)
-                    </div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--dark)' }}>
-                      Routine screening. Parents reported some concerns with social play.
-                      Recommended monitoring for 6 months.
-                    </div>
-                  </div>
-                  <div style={{ borderLeft: '3px solid var(--border)', paddingLeft: 12 }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 700, marginBottom: 4 }}>
-                      05 Jun 2024
-                    </div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--dark)' }}>
-                      Initial consultation. No major red flags at this time.
-                    </div>
-                  </div>
-                </div>
               </Card>
             </div>
           )}
@@ -331,12 +309,12 @@ export default function PatientDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {history.map(h => (
-                    <tr key={h.id}>
-                      <td style={{ fontWeight: 600 }}>{new Date(h.date).toLocaleDateString()}</td>
-                      <td>{h.score} / {h.total}</td>
-                      <td><Badge risk={h.risk} /></td>
-                      <td>{h.status}</td>
+                  {screenings.map(h => (
+                    <tr key={h._id}>
+                      <td style={{ fontWeight: 600 }}>{new Date(h.screeningDate || h.createdAt).toLocaleDateString()}</td>
+                      <td>{h.score} / 20</td>
+                      <td><Badge risk={h.riskLevel} /></td>
+                      <td style={{ textTransform: 'capitalize' }}>{h.status}</td>
                     </tr>
                   ))}
                 </tbody>

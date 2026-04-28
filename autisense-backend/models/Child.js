@@ -6,6 +6,11 @@ const ChildSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  doctorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
   name: {
     type: String,
     required: [true, 'Please add a name'],

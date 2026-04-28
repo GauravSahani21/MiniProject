@@ -50,11 +50,13 @@ function AppLayout() {
         {/* Parent */}
         <Route path="/parent"           element={<ProtectedRoute roles={['parent']}><ParentDashboard /></ProtectedRoute>} />
         <Route path="/add-child"        element={<ProtectedRoute roles={['parent']}><AddChildPage /></ProtectedRoute>} />
-        <Route path="/child/:id"        element={<ProtectedRoute roles={['parent']}><ChildDetailPage /></ProtectedRoute>} />
+        <Route path="/parent/child/:childId/details" element={<ProtectedRoute roles={['parent']}><ChildDetailPage /></ProtectedRoute>} />
+        <Route path="/parent/child/:childId/edit"    element={<ProtectedRoute roles={['parent']}><ChildDetailPage /></ProtectedRoute>} />
         <Route path="/screening"        element={<ProtectedRoute roles={['parent']}><ScreeningPage /></ProtectedRoute>} />
         <Route path="/screening/:childId" element={<ProtectedRoute roles={['parent']}><ScreeningPage /></ProtectedRoute>} />
         <Route path="/result"           element={<ProtectedRoute roles={['parent']}><ResultPage /></ProtectedRoute>} />
         <Route path="/history"          element={<ProtectedRoute roles={['parent']}><HistoryPage /></ProtectedRoute>} />
+        <Route path="/report"           element={<ProtectedRoute roles={['parent']}><HistoryPage /></ProtectedRoute>} />
 
         {/* Doctor */}
         <Route path="/doctor"                element={<ProtectedRoute roles={['doctor']}><DoctorDashboard /></ProtectedRoute>} />

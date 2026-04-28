@@ -101,6 +101,7 @@ export const createScreening = async (req, res, next) => {
     const screening = await Screening.create({
       childId,
       parentId: req.user._id,
+      doctorId: child.doctorId || null,
       answers: fullAnswers,
       score,
       riskLevel,
@@ -108,7 +109,7 @@ export const createScreening = async (req, res, next) => {
       categories,
       flaggedQuestions,
       mlPrediction,
-      status: status === 'pending' ? 'pending' : 'completed'
+      status: status === 'reviewed' ? 'reviewed' : status === 'completed' ? 'completed' : 'pending'
     });
 
     // Keep the child card/dashboard snapshot fields in sync.

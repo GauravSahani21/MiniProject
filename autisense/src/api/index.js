@@ -50,7 +50,8 @@ export const screenings = {
 };
 
 export const trajectory = {
-  getByChild: (childId, token) => apiCall(`/trajectory/${childId}`, 'GET', null, token)
+  getByChild: (childId, token) => apiCall(`/trajectory/${childId}`, 'GET', null, token),
+  getTrajectory: (childId, token) => apiCall(`/trajectory/${childId}`, 'GET', null, token)
 };
 
 export const reports = {
@@ -64,6 +65,7 @@ export const doctor = {
   getPatients: (token) => apiCall('/doctor/patients', 'GET', null, token),
   getScreenings: (childId, token) => apiCall(`/doctor/patients/${childId}/screenings`, 'GET', null, token),
   addRemarks: (id, data, token) => apiCall(`/doctor/screenings/${id}/remarks`, 'PUT', data, token),
+  markReviewed: (screeningId, token) => apiCall(`/doctor/screenings/${screeningId}/review`, 'PUT', null, token),
   getStats: (token) => apiCall('/doctor/stats', 'GET', null, token)
 };
 

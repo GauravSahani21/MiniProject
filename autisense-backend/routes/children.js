@@ -29,11 +29,11 @@ router.route('/')
     createChild
   );
 
-router.route('/:id')
+router.route('/:childId')
   .get(getChild)
   .put(updateChild)
   .delete(deleteChild);
 
-router.get('/:id/screenings', getChildScreenings);
+router.get('/:childId/screenings', getChildScreenings);
 
 export default router;
