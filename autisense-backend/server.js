@@ -13,6 +13,8 @@ import reportsRoutes from './routes/reports.js';
 import doctorRoutes from './routes/doctor.js';
 import adminRoutes from './routes/admin.js';
 import trajectoryRoutes from './routes/trajectory.js';
+import interventionsRoutes from './routes/interventions.js';
+import clinicalRoutes from './routes/clinical.js';
 
 // Import Genkit config to register flows (must come after dotenv/config)
 import './config/genkit.js';
@@ -44,6 +46,8 @@ app.use('/api/reports', reportsRoutes);
 app.use('/api/doctor', doctorRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/trajectory', trajectoryRoutes);
+app.use('/api/interventions', interventionsRoutes);
+app.use('/api/clinical', clinicalRoutes);
 
 // Global Error Handler (Step 16)
 app.use((err, req, res, next) => {

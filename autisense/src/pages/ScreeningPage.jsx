@@ -4,7 +4,7 @@ import { PageWrapper, Card, Btn, Select } from '../components/UI';
 import { MCHAT_QUESTIONS } from '../data/dummyData';
 import { useScreening } from '../context/ScreeningContext';
 import { predictAutism } from '../services/api';
-import { children as childrenApi, screenings as screeningsApi } from '../api';
+import { children as childrenApi, screenings as screeningsApi, interventions as interventionsApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 
 export default function ScreeningPage() {
@@ -67,10 +67,15 @@ export default function ScreeningPage() {
 
     const answerArray = buildMlAnswerArray();
     const booleanAnswers = buildBooleanAnswerArray();
+    const normalizedGender = (() => {
+      const g = String(selectedChild?.gender || '').toLowerCase();
+      // DB stores 'male' | 'female'; ML expects 'm' | 'f'
+      return g === 'female' || g.startsWith('f') ? 'f' : 'm';
+    })();
     const childPayload = {
       name:   selectedChild.name,
       age:    selectedChild.age || (selectedChild.dob ? new Date().getFullYear() - new Date(selectedChild.dob).getFullYear() : 3),
-      gender: selectedChild.gender?.toLowerCase().startsWith('m') || selectedChild.gender?.toLowerCase().startsWith('b') ? 'm' : 'f',
+      gender: normalizedGender,
     };
 
     try {
@@ -99,6 +104,9 @@ export default function ScreeningPage() {
           probability: normalizedProbability
         }
       }, token);
+
+      // Auto-generate weekly intervention plan (best-effort; do not block navigation).
+      interventionsApi.generate(selectedChildId, token).catch(() => {});
 
       setResult({
         child:       selectedChild,
@@ -132,6 +140,9 @@ export default function ScreeningPage() {
             probability
           }
         }, token);
+
+        // Auto-generate weekly intervention plan (best-effort; do not block navigation).
+        interventionsApi.generate(selectedChildId, token).catch(() => {});
 
         setResult({
           child:       selectedChild,

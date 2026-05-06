@@ -2,8 +2,15 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageWrapper, Card, Badge, Btn, useToast } from '../components/UI';
 import { useAuth } from '../context/AuthContext';
-import { trajectory as trajectoryApi, doctor as doctorApi } from '../api';
+import { trajectory as trajectoryApi, doctor as doctorApi, clinical as clinicalApi } from '../api';
 import RiskTrajectoryChart, { trendMeta } from '../components/RiskTrajectoryChart';
+
+function urgencyMeta(u) {
+  const x = String(u || '').toLowerCase();
+  if (x === 'high') return { label: 'High', bg: 'var(--red-pale)', color: 'var(--red)' };
+  if (x === 'medium') return { label: 'Medium', bg: 'var(--amber-pale)', color: 'var(--amber)' };
+  return { label: 'Low', bg: '#dcfce7', color: 'var(--green)' };
+}
 
 export default function PatientDetailPage() {
   const { id: childId } = useParams();
@@ -16,6 +23,11 @@ export default function PatientDetailPage() {
   const [trajectoryData, setTrajectoryData] = useState(null);
   const [loadingTrajectory, setLoadingTrajectory] = useState(false);
   const [remarks, setRemarks] = useState('');
+
+  const [nextAction, setNextAction] = useState(null);
+  const [loadingNextAction, setLoadingNextAction] = useState(false);
+  const [explainability, setExplainability] = useState(null);
+  const [loadingExplainability, setLoadingExplainability] = useState(false);
 
   useEffect(() => {
     const fetchScreenings = async () => {
@@ -64,6 +76,59 @@ export default function PatientDetailPage() {
       status: latestScreening.status || 'pending',
     };
   }, [latestScreening]);
+
+  useEffect(() => {
+    const fetchClinical = async () => {
+      if (!token || !childId || !latestScreening?._id) return;
+      try {
+        setLoadingNextAction(true);
+        const res = await clinicalApi.getNextAction(childId, token);
+        setNextAction(res.data);
+      } catch (err) {
+        setNextAction(null);
+      } finally {
+        setLoadingNextAction(false);
+      }
+
+      try {
+        setLoadingExplainability(true);
+        const res = await clinicalApi.getExplainability(latestScreening._id, token);
+        setExplainability(res.data);
+      } catch (err) {
+        setExplainability(null);
+      } finally {
+        setLoadingExplainability(false);
+      }
+    };
+    fetchClinical();
+  }, [token, childId, latestScreening?._id]);
+
+  const handleReferral = async () => {
+    if (!patient || !nextAction) return;
+    const note = [
+      `Referral note (AutiSense CDS)`,
+      `Child: ${patient.name}`,
+      `Latest screening: ${new Date(patient.date).toLocaleDateString()}`,
+      `Risk: ${patient.risk} | Score: ${patient.score}/20`,
+      `Recommended action: ${nextAction.action || 'refer specialist'}`,
+      `Urgency: ${nextAction.urgency || 'medium'}`,
+      `Timeline: ${nextAction.timeline || ''}`,
+      ``,
+      `Reasoning:`,
+      `${nextAction.reasoning || ''}`,
+    ].join('\n');
+
+    try {
+      await navigator.clipboard.writeText(note);
+      showToast('Referral note copied to clipboard.', 'success');
+    } catch (e) {
+      showToast('Unable to copy referral note.', 'error');
+    }
+
+    const subject = encodeURIComponent(`Referral - ${patient.name} (${patient.risk} risk)`);
+    const body = encodeURIComponent(note);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  };
 
   const handleSave = () => {
     showToast('Clinical notes saved locally.', 'success');
@@ -256,6 +321,90 @@ export default function PatientDetailPage() {
                   </p>
                 )}
               </Card>
+
+              {/* ── Clinical Decision Support ── */}
+              <Card style={{ padding: 24, marginBottom: 20 }}>
+                <h3 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: '1.1rem', marginBottom: 14 }}>
+                  Clinical Decision Support
+                </h3>
+
+                <div className="grid-2" style={{ gap: 14 }}>
+                  {/* Next Best Action */}
+                  <div style={{ border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--cream)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                      <div style={{ fontWeight: 900, color: 'var(--dark)' }}>Next Best Action</div>
+                      {nextAction?.urgency && (() => {
+                        const m = urgencyMeta(nextAction.urgency);
+                        return (
+                          <span style={{ background: m.bg, color: m.color, padding: '5px 10px', borderRadius: 999, fontWeight: 900, fontSize: '0.75rem' }}>
+                            {m.label} urgency
+                          </span>
+                        );
+                      })()}
+                    </div>
+
+                    {loadingNextAction ? (
+                      <div style={{ color: 'var(--muted)', fontSize: '0.88rem' }}>Generating recommendation...</div>
+                    ) : nextAction ? (
+                      <>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 900, color: 'var(--dark)', textTransform: 'capitalize' }}>
+                          {nextAction.action || 'therapy focus'}
+                        </div>
+                        <div style={{ marginTop: 8, fontSize: '0.88rem', color: 'var(--mid)', lineHeight: 1.6 }}>
+                          <strong>Timeline:</strong> {nextAction.timeline || '—'}
+                        </div>
+                        <div style={{ marginTop: 8, fontSize: '0.88rem', color: 'var(--mid)', lineHeight: 1.6 }}>
+                          <strong>Reasoning:</strong> {nextAction.reasoning || '—'}
+                        </div>
+                        <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+                          <Btn size="sm" variant="outline" onClick={handleReferral}>
+                            One-click Referral
+                          </Btn>
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ color: 'var(--muted)', fontSize: '0.88rem' }}>Recommendation unavailable right now.</div>
+                    )}
+                  </div>
+
+                  {/* Explainability */}
+                  <div style={{ border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--cream)' }}>
+                    <div style={{ fontWeight: 900, color: 'var(--dark)', marginBottom: 10 }}>
+                      Key factors that drove this result
+                    </div>
+
+                    {loadingExplainability ? (
+                      <div style={{ color: 'var(--muted)', fontSize: '0.88rem' }}>Calculating explainability...</div>
+                    ) : explainability?.topFactors?.length ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {explainability.topFactors.map((f) => {
+                          const pct = Number(f.contributionPercent || 0);
+                          const level = pct >= 25 ? 'high' : pct >= 15 ? 'medium' : 'low';
+                          const color = level === 'high' ? 'var(--red)' : level === 'medium' ? 'var(--amber)' : 'var(--green)';
+                          return (
+                            <div key={f.questionId} style={{ display: 'grid', gridTemplateColumns: '1fr 60px', gap: 10, alignItems: 'center' }}>
+                              <div>
+                                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--dark)' }}>
+                                  Q{f.questionId}. {f.questionText}
+                                </div>
+                                <div style={{ marginTop: 6, height: 7, background: 'var(--border)', borderRadius: 999 }}>
+                                  <div style={{ width: `${Math.min(100, pct)}%`, height: '100%', borderRadius: 999, background: color }} />
+                                </div>
+                              </div>
+                              <div style={{ textAlign: 'right', fontWeight: 900, color: 'var(--dark)', fontSize: '0.82rem' }}>
+                                {pct}%
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div style={{ color: 'var(--muted)', fontSize: '0.88rem' }}>Explainability unavailable right now.</div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+
               <Card style={{ padding: 24 }}>
                 <h3 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.1rem', marginBottom: 16 }}>
                   Screening Snapshot

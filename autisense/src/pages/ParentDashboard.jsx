@@ -4,12 +4,16 @@ import { useAuth } from '../context/AuthContext';
 import { children as childrenApi, screenings as screeningsApi, trajectory as trajectoryApi } from '../api';
 import { PageWrapper, SectionHeading, StatCard, Card, Btn, Badge, ScoreBar, Modal, useToast, EmptyState } from '../components/UI';
 import RiskTrajectoryChart, { trendMeta } from '../components/RiskTrajectoryChart';
+import InterventionPlan from './InterventionPlan';
 
 export default function ParentDashboard() {
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const { showToast, ToastComponent } = useToast();
   
+  const [tab, setTab] = useState('children'); // children | interventions
+  const [selectedChildForIntervention, setSelectedChildForIntervention] = useState('');
+
   const [children, setChildren] = useState([]);
   const [allScreenings, setAllScreenings] = useState([]);
   const [recentScreenings, setRecentScreenings] = useState([]);
@@ -33,6 +37,10 @@ export default function ParentDashboard() {
 
         setChildren(loadedChildren);
         setAllScreenings(loadedScreenings);
+
+        if (!selectedChildForIntervention && loadedChildren.length > 0) {
+          setSelectedChildForIntervention(loadedChildren[0]._id);
+        }
         const sortedRecent = [...loadedScreenings]
           .sort((a, b) => new Date(b.screeningDate || b.createdAt) - new Date(a.screeningDate || a.createdAt))
           .slice(0, 5)
@@ -131,20 +139,32 @@ export default function ParentDashboard() {
           <StatCard icon="📅" value={lastScreening} label="Last Screening" bg="#f5f3ff" color="#7c3aed" />
         </div>
 
-        {/* Children Grid */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <SectionHeading title="Your Children" />
-          <Btn size="sm" onClick={() => navigate('/add-child')}>+ Add Child</Btn>
+        {/* Tabs */}
+        <div className="tab-bar" style={{ marginBottom: 22 }}>
+          <button className={`tab-btn ${tab === 'children' ? 'active' : ''}`} onClick={() => setTab('children')}>
+            Children
+          </button>
+          <button className={`tab-btn ${tab === 'interventions' ? 'active' : ''}`} onClick={() => setTab('interventions')}>
+            Intervention Plan
+          </button>
         </div>
 
-        {children.length === 0 ? (
-          <Card style={{ padding: 40 }}>
-            <EmptyState icon="👶" title="No children added yet" desc="Add your child's profile to start the clinically validated M-CHAT screening process." action={<Btn onClick={() => navigate('/add-child')}>Add Child Profile</Btn>} />
-          </Card>
-        ) : (
-          <div className="grid-2" style={{ marginBottom: 48 }}>
-            {children.map((c, i) => (
-              <Card key={c._id} className={`animate-fadeInUp delay-${i+1}`} style={{ padding: '24px 28px', position: 'relative' }}>
+        {tab === 'children' && (
+          <>
+            {/* Children Grid */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <SectionHeading title="Your Children" />
+              <Btn size="sm" onClick={() => navigate('/add-child')}>+ Add Child</Btn>
+            </div>
+
+            {children.length === 0 ? (
+              <Card style={{ padding: 40 }}>
+                <EmptyState icon="👶" title="No children added yet" desc="Add your child's profile to start the clinically validated M-CHAT screening process." action={<Btn onClick={() => navigate('/add-child')}>Add Child Profile</Btn>} />
+              </Card>
+            ) : (
+              <div className="grid-2" style={{ marginBottom: 48 }}>
+                {children.map((c, i) => (
+                  <Card key={c._id} className={`animate-fadeInUp delay-${i+1}`} style={{ padding: '24px 28px', position: 'relative' }}>
                 {/* Actions */}
                 <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 6 }}>
                   <button onClick={() => navigate(`/parent/child/${c._id}/edit`)} style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--cream)', color: 'var(--mid)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', border: '1px solid var(--border)' }}>✏️</button>
@@ -242,49 +262,81 @@ export default function ParentDashboard() {
                     )}
                   </div>
                 )}
-              </Card>
-            ))}
-          </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* History Preview */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <SectionHeading title="Recent Screenings" />
+              <button onClick={() => navigate('/report')} style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--orange)', background: 'none', border: 'none', cursor: 'pointer' }}>View All →</button>
+            </div>
+
+            <Card className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Child</th>
+                    <th>Score</th>
+                    <th>Risk Level</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: 'right' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentScreenings.length > 0 ? recentScreenings.map((row, i) => (
+                    <tr key={row._id} className={`animate-fadeInUp delay-${i+2}`}>
+                      <td style={{ fontWeight: 600 }}>{new Date(row.date).toLocaleDateString()}</td>
+                      <td>{row.childName}</td>
+                      <td>{row.score} / {row.total}</td>
+                      <td><Badge risk={row.risk} /></td>
+                      <td style={{ textTransform: 'capitalize' }}>{row.status}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <Btn size="sm" variant="ghost" onClick={() => navigate(`/report?childId=${row.childId}`)}>History</Btn>
+                      </td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan="6" style={{ padding: 30, textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>No screenings found.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </Card>
+          </>
         )}
 
-        {/* History Preview */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <SectionHeading title="Recent Screenings" />
-          <button onClick={() => navigate('/report')} style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--orange)', background: 'none', border: 'none', cursor: 'pointer' }}>View All →</button>
-        </div>
+        {tab === 'interventions' && (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <SectionHeading title="Intervention Plan" />
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--mid)' }}>Child</label>
+                <select
+                  value={selectedChildForIntervention}
+                  onChange={(e) => setSelectedChildForIntervention(e.target.value)}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: 12,
+                    border: '1px solid var(--border)',
+                    background: 'white',
+                    minWidth: 220,
+                    fontWeight: 700,
+                    color: 'var(--dark)'
+                  }}
+                >
+                  {children.map((c) => (
+                    <option key={c._id} value={c._id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-        <Card className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Child</th>
-                <th>Score</th>
-                <th>Risk Level</th>
-                <th>Status</th>
-                <th style={{ textAlign: 'right' }}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentScreenings.length > 0 ? recentScreenings.map((row, i) => (
-                <tr key={row._id} className={`animate-fadeInUp delay-${i+2}`}>
-                  <td style={{ fontWeight: 600 }}>{new Date(row.date).toLocaleDateString()}</td>
-                  <td>{row.childName}</td>
-                  <td>{row.score} / {row.total}</td>
-                  <td><Badge risk={row.risk} /></td>
-                  <td style={{ textTransform: 'capitalize' }}>{row.status}</td>
-                  <td style={{ textAlign: 'right' }}>
-                    <Btn size="sm" variant="ghost" onClick={() => navigate(`/report?childId=${row.childId}`)}>History</Btn>
-                  </td>
-                </tr>
-              )) : (
-                <tr>
-                  <td colSpan="6" style={{ padding: 30, textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>No screenings found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </Card>
+            <InterventionPlan childId={selectedChildForIntervention} />
+          </>
+        )}
       </div>
     </PageWrapper>
   );

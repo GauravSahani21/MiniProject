@@ -32,7 +32,7 @@ const MCHAT_QUESTIONS = [
 // @access  Private (parent)
 export const createScreening = async (req, res, next) => {
   try {
-    const { childId, answers, mlPrediction, status } = req.body;
+    const { childId, answers, mlPrediction } = req.body;
 
     // Validate child belongs to this parent
     const child = await Child.findOne({ _id: childId, parentId: req.user._id });
@@ -109,7 +109,8 @@ export const createScreening = async (req, res, next) => {
       categories,
       flaggedQuestions,
       mlPrediction,
-      status: status === 'reviewed' ? 'reviewed' : status === 'completed' ? 'completed' : 'pending'
+      // Parent-submitted screenings must always start as pending review.
+      status: 'pending'
     });
 
     // Keep the child card/dashboard snapshot fields in sync.

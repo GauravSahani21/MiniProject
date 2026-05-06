@@ -26,7 +26,7 @@ export const getChildren = async (req, res, next) => {
 export const getChild = async (req, res, next) => {
   try {
     const childId = req.params.childId || req.params.id;
-    const child = await Child.findOne({ _id: childId, parentId: req.user.id, isActive: true });
+    const child = await Child.findOne({ _id: childId, parentId: req.user._id, isActive: true });
 
     if (!child) {
       return res.status(404).json({ success: false, error: 'Child not found' });
@@ -65,7 +65,7 @@ export const createChild = async (req, res, next) => {
 export const updateChild = async (req, res, next) => {
   try {
     const childId = req.params.childId || req.params.id;
-    let child = await Child.findOne({ _id: childId, parentId: req.user.id });
+    let child = await Child.findOne({ _id: childId, parentId: req.user._id });
 
     if (!child) {
       return res.status(404).json({ success: false, error: 'Child not found' });
@@ -93,7 +93,7 @@ export const updateChild = async (req, res, next) => {
 export const deleteChild = async (req, res, next) => {
   try {
     const childId = req.params.childId || req.params.id;
-    const child = await Child.findOne({ _id: childId, parentId: req.user.id });
+    const child = await Child.findOne({ _id: childId, parentId: req.user._id });
 
     if (!child) {
       return res.status(404).json({ success: false, error: 'Child not found' });
@@ -118,7 +118,7 @@ export const getChildScreenings = async (req, res, next) => {
   try {
     const childId = req.params.childId || req.params.id;
     // Verify ownership
-    const child = await Child.findOne({ _id: childId, parentId: req.user.id });
+    const child = await Child.findOne({ _id: childId, parentId: req.user._id });
     if (!child) {
       return res.status(404).json({ success: false, error: 'Child not found' });
     }

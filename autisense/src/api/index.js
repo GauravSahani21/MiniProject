@@ -54,6 +54,18 @@ export const trajectory = {
   getTrajectory: (childId, token) => apiCall(`/trajectory/${childId}`, 'GET', null, token)
 };
 
+export const interventions = {
+  generate: (childId, token) => apiCall('/interventions/generate', 'POST', { childId }, token),
+  getByChild: (childId, token) => apiCall(`/interventions/${childId}`, 'GET', null, token),
+  updateAdherence: (planId, activities, outcomeNotes, token) =>
+    apiCall(`/interventions/${planId}/adherence`, 'PUT', { activities, outcomeNotes }, token),
+};
+
+export const clinical = {
+  getNextAction: (childId, token) => apiCall(`/clinical/next-action/${childId}`, 'GET', null, token),
+  getExplainability: (screeningId, token) => apiCall(`/clinical/explainability/${screeningId}`, 'GET', null, token),
+};
+
 export const reports = {
   getAll: (token) => apiCall('/reports', 'GET', null, token),
   getOne: (screeningId, token) => apiCall(`/reports/${screeningId}`, 'GET', null, token),
