@@ -61,6 +61,9 @@ export default function Navbar() {
         <button style={s('/awareness')} onClick={() => go('/awareness')}>
           🧩 Awareness
         </button>
+        <button style={s('/drawing-analysis')} onClick={() => go('/drawing-analysis')}>
+          🎨 Drawing Analysis
+        </button>
         <button style={s('/login')} onClick={() => go('/login')}>
           Login
         </button>
@@ -94,6 +97,9 @@ export default function Navbar() {
       <>
         <button style={s('/awareness')} onClick={() => go('/awareness')}>
           🧩 Awareness
+        </button>
+        <button style={s('/drawing-analysis')} onClick={() => go('/drawing-analysis')}>
+          🎨 Drawing Analysis
         </button>
         <button style={s(dash)} onClick={() => go(dash)}>
           Dashboard
