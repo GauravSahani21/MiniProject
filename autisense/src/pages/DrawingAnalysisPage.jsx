@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { Card, Button, AnimatedCard } from '../components/UI';
-import { UploadCloud, CheckCircle, AlertTriangle, Info, Image as ImageIcon } from 'lucide-react';
+import { Card, Btn, AnimatedCard, PageWrapper, SectionHeading, Spinner, Container, Grid } from '../components/UI';
+import { UploadCloud, CheckCircle, AlertTriangle, Info, Image as ImageIcon, Sparkles, Wand2 } from 'lucide-react';
 import '../index.css';
 
 export default function DrawingAnalysisPage() {
@@ -57,7 +57,7 @@ export default function DrawingAnalysisPage() {
         const base64data = reader.result;
         
         try {
-          const response = await fetch('http://localhost:5001/analyze-drawing', {
+          const response = await fetch('http://localhost:5000/api/scan/analyze-drawing', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -84,145 +84,182 @@ export default function DrawingAnalysisPage() {
   };
 
   return (
-    <div className="page-container">
-      <div className="page-header" style={{ textAlign: 'center', marginBottom: 40 }}>
-        <h1 className="page-title">🎨 AI Drawing Analysis</h1>
-        <p className="page-subtitle" style={{ maxWidth: 600, margin: '0 auto' }}>
-          Upload a drawing created by the child. Our advanced AI will analyze the drawing for characteristics 
-          often associated with autism spectrum disorder to provide an early risk assessment.
-        </p>
-      </div>
+    <PageWrapper>
+      <Container style={{ padding: '60px 0' }}>
+        <div style={{ textAlign: 'center', marginBottom: 60 }}>
+          <div className="animate-fadeInUp" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            background: 'var(--orange-pale)', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-full)', padding: '6px 18px',
+            fontSize: '0.8rem', fontWeight: 800, color: 'var(--orange-solid)',
+            marginBottom: 20
+          }}>
+            <Sparkles size={14} /> AI VISION ANALYSIS
+          </div>
+          <SectionHeading 
+            title="Psychological Drawing Analysis" 
+            subtitle="Our AI analyzes spatial organization, repetitive patterns, and social elements in child drawings to identify early autism indicators."
+            center
+          />
+        </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 32, alignItems: 'center' }}>
-        
-        {/* Upload Section */}
-        <AnimatedCard delay={0.1} style={{ width: '100%', maxWidth: 700 }}>
-          <Card>
-            <h2 style={{ fontSize: '1.25rem', color: 'var(--dark)', marginBottom: 16 }}>Upload Drawing</h2>
-            
-            <div 
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              style={{
-                border: '2px dashed var(--border)',
-                borderRadius: 'var(--radius-lg)',
-                padding: '40px 20px',
-                textAlign: 'center',
-                cursor: 'pointer',
-                background: previewUrl ? 'var(--bg)' : 'var(--slate-pale)',
-                transition: 'all 0.3s ease',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 16
-              }}
-            >
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleFileChange} 
-                accept="image/*" 
-                style={{ display: 'none' }} 
-              />
+        <div style={{ display: 'grid', gridTemplateColumns: result ? '1.2fr 0.8fr' : '1fr', gap: 40, alignItems: 'start', maxWidth: result ? 1200 : 800, margin: '0 auto' }}>
+          
+          {/* Upload Section */}
+          <AnimatedCard delay={0.1}>
+            <Card premium p="40px">
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--dark)', marginBottom: 28, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <ImageIcon size={24} className="text-orange" />
+                Upload Child's Drawing
+              </h2>
               
-              {previewUrl ? (
-                <div style={{ position: 'relative', width: '100%', maxHeight: 300, display: 'flex', justifyContent: 'center' }}>
-                  <img src={previewUrl} alt="Preview" style={{ maxHeight: 300, maxWidth: '100%', objectFit: 'contain', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)' }} />
-                  <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(255,255,255,0.9)', padding: '6px 12px', borderRadius: 'var(--radius-full)', fontSize: '0.8rem', fontWeight: 600, color: 'var(--mid)', display: 'flex', alignItems: 'center', gap: 6, boxShadow: 'var(--shadow-sm)' }}>
-                    <ImageIcon size={14} /> Change Image
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--orange-pale)', color: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <UploadCloud size={32} />
-                  </div>
-                  <div>
-                    <p style={{ fontWeight: 600, color: 'var(--dark)', marginBottom: 4 }}>Click or drag image here</p>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--mid)' }}>Supports JPG, PNG, WEBP</p>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {error && (
-              <div style={{ marginTop: 16, padding: '12px 16px', background: '#fee2e2', color: '#b91c1c', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9rem' }}>
-                <AlertTriangle size={18} /> {error}
-              </div>
-            )}
-
-            <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
-              <Button 
-                variant="primary" 
-                size="lg" 
-                onClick={analyzeDrawing} 
-                disabled={!image || loading}
-                style={{ width: '100%', maxWidth: 300, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}
+              <div 
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  border: '2.5px dashed var(--border)',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '60px 24px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  background: previewUrl ? 'var(--cream)' : 'var(--orange-pale)',
+                  transition: 'var(--transition)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 24,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  minHeight: 400
+                }}
+                onMouseEnter={e => { if(!previewUrl) e.currentTarget.style.borderColor = 'var(--orange-solid)'; }}
+                onMouseLeave={e => { if(!previewUrl) e.currentTarget.style.borderColor = 'var(--border)'; }}
               >
-                {loading ? (
-                  <>
-                    <div className="spinner" style={{ width: 18, height: 18, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                    Analyzing Image...
-                  </>
-                ) : (
-                  'Analyze Drawing'
-                )}
-              </Button>
-            </div>
-          </Card>
-        </AnimatedCard>
-
-        {/* Results Section */}
-        {result && (
-          <AnimatedCard delay={0.2} style={{ width: '100%', maxWidth: 700 }}>
-            <Card style={{ 
-              borderTop: `4px solid ${result.prediction.toLowerCase() === 'high' ? 'var(--red)' : result.prediction.toLowerCase() === 'medium' ? 'var(--orange)' : 'var(--green)'}`
-            }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 24 }}>
-                <div style={{ 
-                  width: 48, height: 48, borderRadius: '50%', flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: result.prediction.toLowerCase() === 'high' ? '#fee2e2' : result.prediction.toLowerCase() === 'medium' ? 'var(--orange-pale)' : '#dcfce7',
-                  color: result.prediction.toLowerCase() === 'high' ? '#dc2626' : result.prediction.toLowerCase() === 'medium' ? 'var(--orange-deep)' : '#16a34a'
-                }}>
-                  {result.prediction.toLowerCase() === 'low' ? <CheckCircle size={24} /> : <AlertTriangle size={24} />}
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '1.25rem', color: 'var(--dark)', marginBottom: 4 }}>Analysis Result</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ 
-                      padding: '4px 10px', borderRadius: 'var(--radius-full)', fontSize: '0.8rem', fontWeight: 700,
-                      background: result.prediction.toLowerCase() === 'high' ? '#fee2e2' : result.prediction.toLowerCase() === 'medium' ? 'var(--orange-pale)' : '#dcfce7',
-                      color: result.prediction.toLowerCase() === 'high' ? '#dc2626' : result.prediction.toLowerCase() === 'medium' ? 'var(--orange-deep)' : '#16a34a'
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  accept="image/*" 
+                  style={{ display: 'none' }} 
+                />
+                
+                {previewUrl ? (
+                  <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', justifyContent: 'center' }}>
+                    <img src={previewUrl} alt="Preview" style={{ maxHeight: 500, maxWidth: '100%', objectFit: 'contain', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)' }} />
+                    <div style={{ 
+                      position: 'absolute', bottom: 16, right: 16, 
+                      background: 'rgba(255,255,255,0.95)', padding: '10px 20px', 
+                      borderRadius: 'var(--radius-full)', fontSize: '0.85rem', 
+                      fontWeight: 800, color: 'var(--orange-solid)', 
+                      display: 'flex', alignItems: 'center', gap: 8, 
+                      boxShadow: 'var(--shadow-md)', backdropFilter: 'blur(8px)'
                     }}>
-                      {result.prediction} Risk
-                    </span>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--mid)', fontWeight: 600 }}>
-                      Confidence Score: {result.score}%
-                    </span>
+                      <Wand2 size={16} /> Tap to Replace
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <>
+                    <div style={{ 
+                      width: 100, height: 100, borderRadius: '50%', 
+                      background: 'white', color: 'var(--orange-solid)', 
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      boxShadow: 'var(--shadow-lg)'
+                    }}>
+                      <UploadCloud size={44} />
+                    </div>
+                    <div>
+                      <p style={{ fontWeight: 900, color: 'var(--dark)', fontSize: '1.2rem', marginBottom: 8 }}>Drop image here or click</p>
+                      <p style={{ fontSize: '0.95rem', color: 'var(--muted)', fontWeight: 600 }}>Supports JPG, PNG, WEBP (Max 10MB)</p>
+                    </div>
+                  </>
+                )}
               </div>
 
-              <div style={{ background: 'var(--slate-pale)', padding: 20, borderRadius: 'var(--radius-md)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: 'var(--dark)', fontWeight: 600 }}>
-                  <Info size={18} style={{ color: 'var(--blue)' }} /> 
-                  Psychological Reasoning
+              {error && (
+                <div className="animate-fadeIn" style={{ marginTop: 24, padding: '16px 24px', background: 'var(--red-pale)', color: 'var(--red)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: 12, fontSize: '0.95rem', fontWeight: 700 }}>
+                  <AlertTriangle size={24} /> {error}
                 </div>
-                <p style={{ color: 'var(--mid)', fontSize: '0.95rem', lineHeight: 1.6, margin: 0, whiteSpace: 'pre-wrap' }}>
-                  {result.reasoning}
-                </p>
-              </div>
+              )}
 
-              <div style={{ marginTop: 24, fontSize: '0.8rem', color: 'var(--mid)', textAlign: 'center' }}>
-                Disclaimer: This AI analysis is an experimental tool and should not replace a professional clinical diagnosis.
+              <div style={{ marginTop: 40 }}>
+                <Btn 
+                  variant="primary" 
+                  size="lg" 
+                  onClick={analyzeDrawing} 
+                  disabled={!image || loading}
+                  loading={loading}
+                  style={{ width: '100%' }}
+                >
+                  Perform AI Analysis
+                </Btn>
               </div>
             </Card>
           </AnimatedCard>
-        )}
 
-      </div>
-    </div>
+          {/* Results Section */}
+          {result && (
+            <AnimatedCard delay={0.2}>
+              <Card premium p="40px" style={{ height: '100%', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: -20, right: -20, fontSize: '6rem', opacity: 0.04 }}>✨</div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 40 }}>
+                  <div style={{ 
+                    width: 72, height: 72, borderRadius: '24px', flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: result.prediction.toLowerCase() === 'high' ? 'var(--red-pale)' : result.prediction.toLowerCase() === 'medium' ? 'var(--amber-pale)' : 'var(--green-pale)',
+                    color: result.prediction.toLowerCase() === 'high' ? 'var(--red)' : result.prediction.toLowerCase() === 'medium' ? 'var(--amber)' : 'var(--green)'
+                  }}>
+                    {result.prediction.toLowerCase() === 'low' ? <CheckCircle size={36} /> : <AlertTriangle size={36} />}
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--dark)', marginBottom: 6 }}>Risk Assessment</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span style={{ 
+                        padding: '6px 16px', borderRadius: 'var(--radius-full)', fontSize: '0.85rem', fontWeight: 900,
+                        background: result.prediction.toLowerCase() === 'high' ? 'var(--red)' : result.prediction.toLowerCase() === 'medium' ? 'var(--amber)' : 'var(--green)',
+                        color: 'white'
+                      }}>
+                        {result.prediction} Risk
+                      </span>
+                      <span style={{ fontSize: '1rem', color: 'var(--muted)', fontWeight: 800 }}>
+                        Confidence: {result.score}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ background: 'var(--cream)', padding: 32, borderRadius: 'var(--radius-lg)', border: '1.5px solid var(--border)', marginBottom: 32 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, color: 'var(--dark)', fontWeight: 900, fontSize: '1.1rem' }}>
+                    <Info size={22} className="text-blue" /> 
+                    Psychological Insights
+                  </div>
+                  <p style={{ color: 'var(--mid)', fontSize: '1.05rem', lineHeight: 1.8, margin: 0, whiteSpace: 'pre-wrap', fontWeight: 500 }}>
+                    {result.reasoning}
+                  </p>
+                </div>
+
+                <Grid cols={2} gap="16px" style={{ marginBottom: 32 }}>
+                  <div style={{ background: 'white', padding: '20px', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--border)' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6, letterSpacing: '0.04em' }}>Spatial Score</div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--dark)' }}>{result.score > 70 ? 'Detailed' : 'Organic'}</div>
+                  </div>
+                  <div style={{ background: 'white', padding: '20px', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--border)' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6, letterSpacing: '0.04em' }}>Social Focus</div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--dark)' }}>{result.prediction === 'Low' ? 'High' : 'Limited'}</div>
+                  </div>
+                </Grid>
+
+                <div style={{ fontSize: '0.85rem', color: 'var(--muted)', textAlign: 'center', fontStyle: 'italic', fontWeight: 500, opacity: 0.8 }}>
+                  Disclaimer: AI analysis is an experimental tool and does not constitute a clinical diagnosis.
+                </div>
+              </Card>
+            </AnimatedCard>
+          )}
+
+        </div>
+      </Container>
+    </PageWrapper>
   );
 }

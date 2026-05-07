@@ -15,6 +15,7 @@ import adminRoutes from './routes/admin.js';
 import trajectoryRoutes from './routes/trajectory.js';
 import interventionsRoutes from './routes/interventions.js';
 import clinicalRoutes from './routes/clinical.js';
+import scanRoutes from './routes/scan.js';
 
 // Import Genkit config to register flows (must come after dotenv/config)
 import './config/genkit.js';
@@ -25,7 +26,8 @@ connectDB();
 const app = express();
 
 // Body parser
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Set security headers
 app.use(helmet());
@@ -48,6 +50,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/trajectory', trajectoryRoutes);
 app.use('/api/interventions', interventionsRoutes);
 app.use('/api/clinical', clinicalRoutes);
+app.use('/api/scan', scanRoutes);
 
 // Global Error Handler (Step 16)
 app.use((err, req, res, next) => {

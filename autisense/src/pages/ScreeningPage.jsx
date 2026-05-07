@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { PageWrapper, Card, Btn, Select } from '../components/UI';
 import { MCHAT_QUESTIONS } from '../data/dummyData';
 import { useScreening } from '../context/ScreeningContext';
-import { predictAutism } from '../services/api';
 import { children as childrenApi, screenings as screeningsApi, interventions as interventionsApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 
@@ -59,119 +58,66 @@ export default function ScreeningPage() {
     return MCHAT_QUESTIONS.map(q => answers[q.id] === 'yes');
   }
 
-  /* ── Submit to Flask API ─────────────────────── */
+  /* ── Submit to Node API ─────────────────────── */
   async function submitScreening() {
     setAnalyzing(true);
     setApiError('');
     setStep(6);
 
-    const answerArray = buildMlAnswerArray();
     const booleanAnswers = buildBooleanAnswerArray();
-    const normalizedGender = (() => {
-      const g = String(selectedChild?.gender || '').toLowerCase();
-      // DB stores 'male' | 'female'; ML expects 'm' | 'f'
-      return g === 'female' || g.startsWith('f') ? 'f' : 'm';
-    })();
-    const childPayload = {
-      name:   selectedChild.name,
-      age:    selectedChild.age || (selectedChild.dob ? new Date().getFullYear() - new Date(selectedChild.dob).getFullYear() : 3),
-      gender: normalizedGender,
-    };
+    const answerArray = buildMlAnswerArray();
+
+    // Calculate score for the ML prediction field
+    const score = answerArray.reduce((sum, a, i) =>
+      sum + ((i < 10 && a === 0) || (i >= 10 && a === 1) ? 1 : 0), 0);
+    const risk  = score <= 6 ? 'Low' : score <= 13 ? 'Medium' : 'High';
+    const probability = Math.round((score / 20) * 100);
 
     try {
-      const data = await predictAutism(answerArray, childPayload);
-      const normalizedRisk = data.riskLevel || data.risk || 'Low';
-      const normalizedScore =
-        typeof data.score === 'number'
-          ? data.score
-          : answerArray.reduce((sum, a, i) => sum + ((i < 10 && a === 0) || (i >= 10 && a === 1) ? 1 : 0), 0);
-      const normalizedProbability =
-        typeof data.probability === 'number'
-          ? data.probability
-          : Math.round((normalizedScore / 20) * 100);
-
-      await screeningsApi.create({
+      const res = await screeningsApi.create({
         childId: selectedChildId,
         answers: booleanAnswers,
-        score: normalizedScore,
-        riskLevel: normalizedRisk,
-        probability: normalizedProbability,
-        recommendations: data.recommendations || [],
+        score,
+        riskLevel: risk,
+        probability,
+        recommendations: [],
         status: 'pending',
         date: new Date().toISOString(),
         mlPrediction: {
-          prediction: data.prediction ?? (normalizedRisk === 'Low' ? 0 : 1),
-          probability: normalizedProbability
+          prediction: risk !== 'Low' ? 1 : 0,
+          probability
         }
       }, token);
 
-      // Auto-generate weekly intervention plan (best-effort; do not block navigation).
+      // Auto-generate weekly intervention plan
       interventionsApi.generate(selectedChildId, token).catch(() => {});
+
+      const { screening, report } = res.data;
 
       setResult({
         child:       selectedChild,
         answers:     booleanAnswers,
-        screened_at: new Date().toISOString(),
-        ...data,
-        risk: normalizedRisk,
-        score: normalizedScore,
-        probability: normalizedProbability
+        screened_at: screening.screeningDate || new Date().toISOString(),
+        prediction:  risk !== 'Low' ? 1 : 0,
+        probability,
+        risk: screening.riskLevel,
+        score: screening.score,
+        total:       20,
+        categories: report.categoryBreakdown || {
+          Social:        parseFloat((answerArray.slice(0, 4).filter(a => a === 0).length / 4).toFixed(2)),
+          Communication: parseFloat((answerArray.slice(4, 8).filter(a => a === 0).length / 4).toFixed(2)),
+          Behavior:      parseFloat(([...answerArray.slice(8,10).map(a=>1-a), ...answerArray.slice(10,12)].reduce((s,v)=>s+v,0) / 4).toFixed(2)),
+          Sensory:       parseFloat((answerArray.slice(12, 16).reduce((s, v) => s + v, 0) / 4).toFixed(2)),
+          Routine:       parseFloat(([...answerArray.slice(16,19), 1 - answerArray[19]].reduce((s,v)=>s+v,0) / 4).toFixed(2)),
+        },
+        flagged: report.flaggedConcerns || [],
       });
       navigate('/result');
-    } catch (err) {
-      console.error('API call failed:', err);
-      // Graceful fallback: compute score locally so user still gets a result
-      const score = answerArray.reduce((sum, a, i) =>
-        sum + ((i < 10 && a === 0) || (i >= 10 && a === 1) ? 1 : 0), 0);
-      const risk  = score <= 6 ? 'Low' : score <= 13 ? 'Medium' : 'High';
-      const probability = Math.round((score / 20) * 100);
-      try {
-        await screeningsApi.create({
-          childId: selectedChildId,
-          answers: booleanAnswers,
-          score,
-          riskLevel: risk,
-          probability,
-          recommendations: [],
-          status: 'pending',
-          date: new Date().toISOString(),
-          mlPrediction: {
-            prediction: risk !== 'Low' ? 1 : 0,
-            probability
-          }
-        }, token);
-
-        // Auto-generate weekly intervention plan (best-effort; do not block navigation).
-        interventionsApi.generate(selectedChildId, token).catch(() => {});
-
-        setResult({
-          child:       selectedChild,
-          answers:     booleanAnswers,
-          screened_at: new Date().toISOString(),
-          prediction:  risk !== 'Low' ? 1 : 0,
-          probability,
-          risk,
-          score,
-          total:       20,
-          categories: {
-            Social:        parseFloat((answerArray.slice(0, 4).filter(a => a === 0).length / 4).toFixed(2)),
-            Communication: parseFloat((answerArray.slice(4, 8).filter(a => a === 0).length / 4).toFixed(2)),
-            Behavior:      parseFloat(([...answerArray.slice(8,10).map(a=>1-a), ...answerArray.slice(10,12)].reduce((s,v)=>s+v,0) / 4).toFixed(2)),
-            Sensory:       parseFloat((answerArray.slice(12, 16).reduce((s, v) => s + v, 0) / 4).toFixed(2)),
-            Routine:       parseFloat(([...answerArray.slice(16,19), 1 - answerArray[19]].reduce((s,v)=>s+v,0) / 4).toFixed(2)),
-          },
-          flagged: MCHAT_QUESTIONS
-            .filter((q, i) => (i < 10 && answerArray[i] === 0) || (i >= 10 && answerArray[i] === 1))
-            .map(q => `Question ${q.id}`),
-          _offline: true,
-        });
-        navigate('/result');
-      } catch (saveErr) {
-        console.error('Failed to save screening:', saveErr);
-        setApiError('Screening could not be saved. Please try again.');
-        setAnalyzing(false);
-        setStep(5);
-      }
+    } catch (saveErr) {
+      console.error('Failed to save screening:', saveErr);
+      setApiError('Screening could not be saved. Please try again.');
+      setAnalyzing(false);
+      setStep(5);
     }
   }
 

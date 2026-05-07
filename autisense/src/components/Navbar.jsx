@@ -17,8 +17,15 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  /* close menu on route change */
-  useEffect(() => { setMenuOpen(false); }, [pathname]);
+  /* close menu on route change or large screen resize */
+  useEffect(() => { 
+    setMenuOpen(false); 
+    const handleResize = () => {
+      if (window.innerWidth > 1024) setMenuOpen(false);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [pathname]);
 
   const go = (path) => { navigate(path); setMenuOpen(false); };
 
@@ -29,27 +36,29 @@ export default function Navbar() {
 
   /* ── link style helper ── */
   const linkStyle = (path) => ({
-    padding: '7px 16px',
+    padding: '8px 18px',
     borderRadius: 'var(--radius-full)',
-    fontSize: '0.86rem',
+    fontSize: '0.88rem',
     fontWeight: 600,
-    color: isActive(path) ? 'var(--orange)' : 'var(--dark)',
+    color: isActive(path) ? 'var(--orange-solid)' : 'var(--dark)',
     background: isActive(path) ? 'var(--orange-pale)' : 'transparent',
     cursor: 'pointer',
     border: 'none',
     fontFamily: 'var(--font-body)',
-    transition: 'all 0.2s ease',
+    transition: 'var(--transition)',
     textDecoration: 'none',
     display: 'inline-flex',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
+    position: 'relative',
+    transform: 'scale(1)',
   });
 
   const mobileLinkStyle = (path) => ({
     ...linkStyle(path),
     width: '100%',
     borderRadius: 'var(--radius-md)',
-    padding: '11px 16px',
+    padding: '12px 18px',
     justifyContent: 'flex-start',
   });
 
@@ -64,24 +73,30 @@ export default function Navbar() {
         <button style={s('/drawing-analysis')} onClick={() => go('/drawing-analysis')}>
           🎨 Drawing Analysis
         </button>
+        <button style={s('/face-eye-scan')} onClick={() => go('/face-eye-scan')}>
+          👁️ Face & Eye Scan
+        </button>
         <button style={s('/login')} onClick={() => go('/login')}>
           Login
         </button>
         <button
           onClick={() => go('/login')}
           style={{
-            padding: mobile ? '11px 16px' : '9px 22px',
+            padding: mobile ? '12px 20px' : '10px 24px',
             borderRadius: 'var(--radius-full)',
             background: 'var(--orange)',
             color: 'white',
-            fontSize: '0.86rem',
-            fontWeight: 700,
+            fontSize: '0.88rem',
+            fontWeight: 800,
             border: 'none',
             cursor: 'pointer',
             fontFamily: 'var(--font-body)',
-            boxShadow: '0 4px 16px rgba(255,107,43,0.30)',
+            boxShadow: 'var(--shadow-md)',
             width: mobile ? '100%' : 'auto',
+            transition: 'var(--transition)',
           }}
+          onMouseEnter={e => e.target.style.transform = 'translateY(-2px)'}
+          onMouseLeave={e => e.target.style.transform = 'translateY(0)'}
         >
           🧡 Start Screening
         </button>
@@ -100,6 +115,9 @@ export default function Navbar() {
         </button>
         <button style={s('/drawing-analysis')} onClick={() => go('/drawing-analysis')}>
           🎨 Drawing Analysis
+        </button>
+        <button style={s('/face-eye-scan')} onClick={() => go('/face-eye-scan')}>
+          👁️ Face & Eye Scan
         </button>
         <button style={s(dash)} onClick={() => go(dash)}>
           Dashboard

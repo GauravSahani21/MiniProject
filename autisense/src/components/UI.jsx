@@ -4,16 +4,64 @@ import React, { useState, useEffect, useCallback } from 'react';
    AutiSense — Shared UI Components
    ════════════════════════════════════════════════════ */
 
+/* ── Container ────────────────────────────────────── */
+export function Container({ children, className = '', style = {}, ...rest }) {
+  return (
+    <div className={`container ${className}`} style={style} {...rest}>
+      {children}
+    </div>
+  );
+}
+
+/* ── Section ──────────────────────────────────────── */
+export function Section({ children, className = '', style = {}, py = '80px', ...rest }) {
+  return (
+    <section className={className} style={{ paddingTop: py, paddingBottom: py, ...style }} {...rest}>
+      {children}
+    </section>
+  );
+}
+
+/* ── Grid ─────────────────────────────────────────── */
+export function Grid({ children, cols = 3, gap = '24px', className = '', style = {}, ...rest }) {
+  return (
+    <div 
+      className={`grid-${cols} ${className}`} 
+      style={{ gap, ...style }} 
+      {...rest}
+    >
+      {children}
+    </div>
+  );
+}
+
 /* ── Card ─────────────────────────────────────────── */
-export function Card({ children, className = '', style = {}, ...rest }) {
+export function Card({ children, className = '', style = {}, premium = true, p = '24px', ...rest }) {
   return (
     <div
-      className={className}
+      className={`${premium ? 'card-premium' : ''} ${className}`}
       style={{
         background: 'var(--white)',
+        borderRadius: 'var(--radius-md)',
+        padding: p,
+        ...style,
+      }}
+      {...rest}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ── GlassCard ────────────────────────────────────── */
+export function GlassCard({ children, className = '', style = {}, p = '32px', premium = true, ...rest }) {
+  return (
+    <div
+      className={`glass ${premium ? 'premium' : ''} ${className}`}
+      style={{
         borderRadius: 'var(--radius-lg)',
-        border: '1.5px solid var(--border)',
-        boxShadow: 'var(--shadow-md)',
+        padding: p,
+        boxShadow: 'var(--shadow-lg)',
         ...style,
       }}
       {...rest}
@@ -28,32 +76,33 @@ const BTN_BASE = {
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  gap: 8,
+  gap: 12,
   borderRadius: 'var(--radius-full)',
   fontFamily: 'var(--font-body)',
   fontWeight: 700,
   cursor: 'pointer',
   border: 'none',
-  transition: 'all 0.2s ease',
+  transition: 'var(--transition)',
   whiteSpace: 'nowrap',
+  letterSpacing: '0.02em',
 };
 
 const BTN_SIZES = {
-  sm: { padding: '7px 18px', fontSize: '0.8rem' },
-  md: { padding: '11px 26px', fontSize: '0.9rem' },
-  lg: { padding: '14px 34px', fontSize: '1rem' },
+  sm: { padding: '10px 22px', fontSize: '0.85rem' },
+  md: { padding: '14px 32px', fontSize: '0.95rem' },
+  lg: { padding: '18px 42px', fontSize: '1.05rem' },
 };
 
 const BTN_VARIANTS = {
   primary: {
     background: 'var(--orange)',
     color: 'white',
-    boxShadow: '0 4px 18px rgba(255,107,43,0.30)',
+    boxShadow: '0 8px 24px rgba(255,107,43,0.25)',
   },
   outline: {
     background: 'transparent',
-    color: 'var(--orange)',
-    border: '2px solid var(--orange)',
+    color: 'var(--orange-solid)',
+    border: '2px solid var(--orange-solid)',
   },
   ghost: {
     background: 'transparent',
@@ -63,12 +112,12 @@ const BTN_VARIANTS = {
   danger: {
     background: 'var(--red)',
     color: 'white',
-    boxShadow: '0 4px 14px rgba(239,68,68,0.28)',
+    boxShadow: '0 8px 24px rgba(239,68,68,0.20)',
   },
   success: {
     background: 'var(--green)',
     color: 'white',
-    boxShadow: '0 4px 14px rgba(34,197,94,0.28)',
+    boxShadow: '0 8px 24px rgba(34,197,94,0.20)',
   },
 };
 
@@ -78,9 +127,11 @@ export function Btn({
   variant = 'primary',
   size = 'md',
   disabled = false,
+  loading = false,
   type = 'button',
   style = {},
   className = '',
+  icon,
 }) {
   const [hovered, setHovered] = useState(false);
 
@@ -89,23 +140,15 @@ export function Btn({
     ...BTN_SIZES[size],
     ...BTN_VARIANTS[variant],
     ...(disabled && {
-      background: '#d1c4bb',
-      color: '#9a8a82',
+      background: '#f1f5f9',
+      color: '#94a3b8',
       cursor: 'not-allowed',
       boxShadow: 'none',
-      border: 'none',
+      border: '1px solid #e2e8f0',
     }),
-    ...(hovered && !disabled && variant === 'primary' && {
-      background: 'var(--orange-deep)',
-      transform: 'translateY(-1px)',
-      boxShadow: '0 6px 24px rgba(255,107,43,0.38)',
-    }),
-    ...(hovered && !disabled && variant === 'outline' && {
-      background: 'var(--orange-pale)',
-    }),
-    ...(hovered && !disabled && variant === 'ghost' && {
-      background: 'var(--orange-pale)',
-      color: 'var(--orange)',
+    ...(hovered && !disabled && !loading && {
+      transform: 'translateY(-4px) scale(1.03)',
+      boxShadow: variant === 'primary' ? '0 12px 32px rgba(255,107,43,0.35)' : undefined,
     }),
     ...style,
   };
@@ -114,22 +157,39 @@ export function Btn({
     <button
       type={type}
       onClick={onClick}
-      disabled={disabled}
+      disabled={disabled || loading}
       className={className}
       style={base}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      {loading ? <Spinner size={20} color={variant === 'primary' ? 'white' : 'var(--orange-solid)'} /> : icon}
       {children}
     </button>
   );
 }
 
+// Aliases
+export { Btn as Button };
+
+/* ── AnimatedCard ─────────────────────────────────── */
+export function AnimatedCard({ children, delay = 0, style = {}, ...rest }) {
+  return (
+    <div 
+      className="animate-fadeInUp" 
+      style={{ animationDelay: `${delay}s`, ...style }} 
+      {...rest}
+    >
+      {children}
+    </div>
+  );
+}
+
 /* ── Badge (Risk) ─────────────────────────────────── */
 const BADGE_STYLES = {
-  Low:    { bg: 'var(--green-pale)',  color: '#166534' },
-  Medium: { bg: 'var(--amber-pale)', color: '#92400E' },
-  High:   { bg: 'var(--red-pale)',   color: '#991B1B' },
+  Low:    { bg: 'var(--green-pale)',  color: '#166534', icon: '✅' },
+  Medium: { bg: 'var(--amber-pale)', color: '#92400E', icon: '⚠️' },
+  High:   { bg: 'var(--red-pale)',   color: '#991B1B', icon: '🚨' },
 };
 
 export function Badge({ risk, style = {} }) {
@@ -138,22 +198,18 @@ export function Badge({ risk, style = {} }) {
     <span style={{
       display: 'inline-flex',
       alignItems: 'center',
-      gap: 5,
-      padding: '3px 12px',
+      gap: 8,
+      padding: '6px 16px',
       borderRadius: 'var(--radius-full)',
-      fontSize: '0.74rem',
-      fontWeight: 700,
+      fontSize: '0.8rem',
+      fontWeight: 800,
       fontFamily: 'var(--font-heading)',
       background: s.bg,
       color: s.color,
+      border: `1.5px solid rgba(0,0,0,0.03)`,
       ...style,
     }}>
-      <span style={{
-        width: 6, height: 6,
-        borderRadius: '50%',
-        background: s.color,
-        display: 'inline-block',
-      }} />
+      <span>{s.icon}</span>
       {risk} Risk
     </span>
   );
@@ -187,8 +243,8 @@ export function Input({
         {...props}
         className={`form-input${error ? ' error' : ''}${shake ? ' shake' : ''} ${className}`}
         style={{
-          borderColor: focused ? 'var(--orange)' : error ? 'var(--red)' : undefined,
-          boxShadow: focused ? '0 0 0 3px rgba(255,107,43,0.12)' : 'none',
+          borderColor: focused ? 'var(--orange-solid)' : error ? 'var(--red)' : undefined,
+          boxShadow: focused ? '0 0 0 4px rgba(255,107,43,0.1)' : 'none',
           ...style,
         }}
         onFocus={e => { setFocused(true); props.onFocus?.(e); }}
@@ -209,8 +265,8 @@ export function Select({ label, error, children, style = {}, ...props }) {
         {...props}
         className={`form-select${error ? ' error' : ''}`}
         style={{
-          borderColor: focused ? 'var(--orange)' : error ? 'var(--red)' : undefined,
-          boxShadow: focused ? '0 0 0 3px rgba(255,107,43,0.12)' : 'none',
+          borderColor: focused ? 'var(--orange-solid)' : error ? 'var(--red)' : undefined,
+          boxShadow: focused ? '0 0 0 4px rgba(255,107,43,0.1)' : 'none',
           ...style,
         }}
         onFocus={e => { setFocused(true); props.onFocus?.(e); }}
@@ -225,9 +281,9 @@ export function Select({ label, error, children, style = {}, ...props }) {
 
 /* ── Toast ────────────────────────────────────────── */
 const TOAST_COLORS = {
-  success: { bg: '#16a34a', icon: '✅' },
-  error:   { bg: '#dc2626', icon: '❌' },
-  info:    { bg: 'var(--orange)', icon: 'ℹ️' },
+  success: { bg: '#10b981', icon: '✅' },
+  error:   { bg: '#ef4444', icon: '❌' },
+  info:    { bg: 'var(--orange-solid)', icon: 'ℹ️' },
 };
 
 function ToastItem({ id, message, type = 'success', onDismiss }) {
@@ -235,7 +291,7 @@ function ToastItem({ id, message, type = 'success', onDismiss }) {
   const s = TOAST_COLORS[type] || TOAST_COLORS.info;
 
   useEffect(() => {
-    const t = setTimeout(() => { setVisible(false); setTimeout(() => onDismiss(id), 300); }, 3000);
+    const t = setTimeout(() => { setVisible(false); setTimeout(() => onDismiss(id), 300); }, 3500);
     return () => clearTimeout(t);
   }, [id, onDismiss]);
 
@@ -243,24 +299,24 @@ function ToastItem({ id, message, type = 'success', onDismiss }) {
     <div style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 10,
+      gap: 12,
       background: s.bg,
       color: 'white',
-      padding: '13px 20px',
+      padding: '16px 24px',
       borderRadius: 'var(--radius-md)',
       boxShadow: 'var(--shadow-xl)',
-      fontSize: '0.88rem',
-      fontWeight: 600,
-      maxWidth: 340,
-      animation: visible ? 'toastIn 0.3s ease' : 'fadeIn 0.3s ease reverse',
+      fontSize: '0.9rem',
+      fontWeight: 700,
+      maxWidth: 380,
+      animation: visible ? 'toastIn 0.4s cubic-bezier(0.16, 1, 0.3, 1)' : 'fadeIn 0.3s ease reverse',
       opacity: visible ? 1 : 0,
       transition: 'opacity 0.3s ease',
     }}>
-      <span style={{ fontSize: '1.1rem' }}>{s.icon}</span>
+      <span style={{ fontSize: '1.2rem' }}>{s.icon}</span>
       {message}
       <button
         onClick={() => { setVisible(false); setTimeout(() => onDismiss(id), 300); }}
-        style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', marginLeft: 'auto', fontSize: '1rem', opacity: 0.7 }}
+        style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', marginLeft: 'auto', fontSize: '1.1rem', opacity: 0.8, padding: 4 }}
       >✕</button>
     </div>
   );
@@ -282,12 +338,12 @@ export function useToast() {
   const ToastComponent = (
     <div style={{
       position: 'fixed',
-      top: 84,
-      right: 20,
+      top: 100,
+      right: 32,
       zIndex: 9999,
       display: 'flex',
       flexDirection: 'column',
-      gap: 10,
+      gap: 12,
     }}>
       {toasts.map(t => (
         <ToastItem key={t.id} {...t} onDismiss={dismiss} />
@@ -299,7 +355,7 @@ export function useToast() {
 }
 
 /* ── Modal ────────────────────────────────────────── */
-export function Modal({ open, onClose, title, children, width = 480 }) {
+export function Modal({ open, onClose, title, children, width = 520 }) {
   useEffect(() => {
     if (open) document.body.style.overflow = 'hidden';
     else document.body.style.overflow = '';
@@ -313,13 +369,13 @@ export function Modal({ open, onClose, title, children, width = 480 }) {
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0,
-        background: 'rgba(30,20,16,0.55)',
+        background: 'rgba(30,20,16,0.65)',
         zIndex: 1000,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 16,
-        backdropFilter: 'blur(3px)',
+        padding: 20,
+        backdropFilter: 'blur(5px)',
         animation: 'fadeIn 0.2s ease',
       }}
     >
@@ -327,11 +383,11 @@ export function Modal({ open, onClose, title, children, width = 480 }) {
         onClick={e => e.stopPropagation()}
         style={{
           background: 'white',
-          borderRadius: 'var(--radius-xl)',
+          borderRadius: 'var(--radius-lg)',
           width: '100%',
           maxWidth: width,
           boxShadow: 'var(--shadow-xl)',
-          animation: 'scaleIn 0.25s ease',
+          animation: 'scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
           overflow: 'hidden',
         }}
       >
@@ -340,59 +396,62 @@ export function Modal({ open, onClose, title, children, width = 480 }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '20px 24px',
-          borderBottom: '1px solid var(--border)',
+          padding: '24px 32px',
+          borderBottom: '1.5px solid var(--border)',
         }}>
-          <h3 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.05rem', color: 'var(--dark)' }}>
+          <h3 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: '1.15rem', color: 'var(--dark)' }}>
             {title}
           </h3>
           <button
             onClick={onClose}
             style={{
-              width: 30, height: 30,
+              width: 36, height: 36,
               borderRadius: '50%',
               background: 'var(--orange-pale)',
               border: 'none',
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '0.85rem',
-              color: 'var(--orange)',
-              fontWeight: 700,
+              fontSize: '1rem',
+              color: 'var(--orange-solid)',
+              fontWeight: 800,
+              transition: 'var(--transition)',
             }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'rotate(90deg)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'rotate(0deg)'}
           >✕</button>
         </div>
         {/* Body */}
-        <div style={{ padding: '24px' }}>{children}</div>
+        <div style={{ padding: '32px' }}>{children}</div>
       </div>
     </div>
   );
 }
 
 /* ── StatCard ─────────────────────────────────────── */
-export function StatCard({ icon, value, label, color = 'var(--orange)', bg, style = {} }) {
+export function StatCard({ icon, value, label, color = 'var(--orange-solid)', bg, style = {} }) {
   return (
-    <Card style={{ padding: '22px 24px', ...style }}>
+    <Card p="28px" style={style}>
       <div style={{
-        width: 44, height: 44,
-        borderRadius: 'var(--radius-md)',
+        width: 52, height: 52,
+        borderRadius: 'var(--radius-sm)',
         background: bg || 'var(--orange-pale)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: '1.4rem',
-        marginBottom: 14,
+        fontSize: '1.6rem',
+        marginBottom: 18,
       }}>
         {icon}
       </div>
       <div style={{
         fontFamily: 'var(--font-heading)',
         fontWeight: 900,
-        fontSize: '1.9rem',
+        fontSize: '2.2rem',
         color,
         lineHeight: 1,
-        marginBottom: 5,
+        marginBottom: 6,
       }}>
         {value}
       </div>
-      <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+      <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
         {label}
       </div>
     </Card>
@@ -400,16 +459,11 @@ export function StatCard({ icon, value, label, color = 'var(--orange)', bg, styl
 }
 
 /* ── PageWrapper ──────────────────────────────────── */
-export function PageWrapper({ children, style = {} }) {
+export function PageWrapper({ children, style = {}, className = '' }) {
   return (
     <div
-      className="page-enter"
-      style={{
-        paddingTop: 88,
-        minHeight: '100vh',
-        background: 'var(--cream)',
-        ...style,
-      }}
+      className={`page-wrapper animate-fadeIn ${className}`}
+      style={style}
     >
       {children}
     </div>
@@ -417,11 +471,11 @@ export function PageWrapper({ children, style = {} }) {
 }
 
 /* ── Spinner ──────────────────────────────────────── */
-export function Spinner({ size = 28, color = 'var(--orange)' }) {
+export function Spinner({ size = 32, color = 'var(--orange-solid)' }) {
   return (
     <div style={{
       width: size, height: size,
-      border: `3px solid rgba(255,107,43,0.15)`,
+      border: `3.5px solid rgba(255,107,43,0.15)`,
       borderTopColor: color,
       borderRadius: '50%',
       animation: 'spin 0.8s linear infinite',
@@ -431,7 +485,7 @@ export function Spinner({ size = 28, color = 'var(--orange)' }) {
 }
 
 /* ── Skeleton ─────────────────────────────────────── */
-export function Skeleton({ width = '100%', height = 18, radius = 8, style = {} }) {
+export function Skeleton({ width = '100%', height = 20, radius = 10, style = {} }) {
   return (
     <div
       className="skeleton"
@@ -440,8 +494,8 @@ export function Skeleton({ width = '100%', height = 18, radius = 8, style = {} }
   );
 }
 
-/* ── Score Bar ────────────────────────────────────── */
-export function ScoreBar({ score, total, risk, height = 8 }) {
+/* ── Score Bar / ProgressBar ───────────────────────── */
+export function ScoreBar({ score, total, risk, height = 10 }) {
   const pct = total > 0 ? (score / total) * 100 : 0;
   const color =
     risk === 'Low' ? 'var(--green)' :
@@ -452,7 +506,18 @@ export function ScoreBar({ score, total, risk, height = 8 }) {
     <div className="score-bar-track" style={{ height }}>
       <div
         className="score-bar-fill"
-        style={{ width: `${pct}%`, background: color, height }}
+        style={{ width: `${pct}%`, background: color }}
+      />
+    </div>
+  );
+}
+
+export function ProgressBar({ pct, color = 'var(--orange-solid)', height = 10, style = {} }) {
+  return (
+    <div className="score-bar-track" style={{ height, ...style }}>
+      <div
+        className="score-bar-fill"
+        style={{ width: `${pct}%`, background: color }}
       />
     </div>
   );
@@ -466,24 +531,24 @@ export function EmptyState({ icon = '📭', title, desc, action }) {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '64px 32px',
+      padding: '80px 40px',
       textAlign: 'center',
-      gap: 12,
+      gap: 16,
     }}>
-      <div style={{ fontSize: '3.5rem' }}>{icon}</div>
-      <h3 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.1rem', color: 'var(--dark)' }}>
+      <div style={{ fontSize: '4rem', marginBottom: 8 }}>{icon}</div>
+      <h3 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: '1.4rem', color: 'var(--dark)' }}>
         {title}
       </h3>
-      {desc && <p style={{ fontSize: '0.85rem', color: 'var(--muted)', maxWidth: 300 }}>{desc}</p>}
-      {action && <div style={{ marginTop: 8 }}>{action}</div>}
+      {desc && <p style={{ fontSize: '0.95rem', color: 'var(--muted)', maxWidth: 360, lineHeight: 1.7 }}>{desc}</p>}
+      {action && <div style={{ marginTop: 12 }}>{action}</div>}
     </div>
   );
 }
 
 /* ── Section Heading ──────────────────────────────── */
-export function SectionHeading({ label, title, subtitle, center = false, light = false }) {
+export function SectionHeading({ label, title, subtitle, center = false, light = false, style = {} }) {
   return (
-    <div style={{ textAlign: center ? 'center' : 'left', marginBottom: 36 }}>
+    <div style={{ textAlign: center ? 'center' : 'left', marginBottom: 48, ...style }}>
       {label && (
         <div className="section-label" style={{ justifyContent: center ? 'center' : 'flex-start' }}>
           {label}
@@ -492,14 +557,21 @@ export function SectionHeading({ label, title, subtitle, center = false, light =
       <h2 style={{
         fontFamily: 'var(--font-heading)',
         fontWeight: 900,
-        fontSize: '2rem',
+        fontSize: '2.4rem',
         color: light ? 'white' : 'var(--dark)',
-        marginBottom: subtitle ? 10 : 0,
+        marginBottom: subtitle ? 14 : 0,
+        letterSpacing: '-0.02em',
       }}>
         {title}
       </h2>
       {subtitle && (
-        <p style={{ fontSize: '0.95rem', color: light ? 'rgba(255,255,255,0.75)' : 'var(--mid)', lineHeight: 1.6, maxWidth: center ? 520 : '100%', margin: center ? '0 auto' : 0 }}>
+        <p style={{ 
+          fontSize: '1.05rem', 
+          color: light ? 'rgba(255,255,255,0.8)' : 'var(--mid)', 
+          lineHeight: 1.65, 
+          maxWidth: center ? 600 : '100%', 
+          margin: center ? '0 auto' : 0 
+        }}>
           {subtitle}
         </p>
       )}
@@ -509,14 +581,28 @@ export function SectionHeading({ label, title, subtitle, center = false, light =
 
 /* ── Divider ──────────────────────────────────────── */
 export function Divider({ style = {} }) {
-  return <div className="divider" style={style} />;
+  return <div style={{ width: '100%', height: '1.5px', background: 'var(--border)', margin: '32px 0', ...style }} />;
 }
 
 /* ── Back Button ──────────────────────────────────── */
 export function BackBtn({ onClick, label = 'Back' }) {
   return (
-    <button className="back-btn" onClick={onClick}>
-      ← {label}
+    <button 
+      className="back-btn" 
+      onClick={onClick}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 8,
+        fontSize: '0.95rem',
+        fontWeight: 700,
+        color: 'var(--mid)',
+        transition: 'var(--transition)',
+      }}
+      onMouseEnter={e => e.currentTarget.style.color = 'var(--orange-solid)'}
+      onMouseLeave={e => e.currentTarget.style.color = 'var(--mid)'}
+    >
+      <span style={{ fontSize: '1.2rem' }}>←</span> {label}
     </button>
   );
 }
@@ -533,11 +619,12 @@ export function RoleBadge({ role }) {
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center',
-      padding: '3px 12px',
+      padding: '4px 14px',
       borderRadius: 'var(--radius-full)',
-      fontSize: '0.74rem', fontWeight: 700,
+      fontSize: '0.8rem', fontWeight: 800,
       fontFamily: 'var(--font-heading)',
       background: s.bg, color: s.color,
+      border: '1.5px solid rgba(0,0,0,0.03)',
     }}>
       {labels[role] || role}
     </span>

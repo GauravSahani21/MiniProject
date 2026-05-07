@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PageWrapper, SectionHeading, Card, Btn } from '../components/UI';
+import { PageWrapper, SectionHeading, Card, Btn, AnimatedCard, GlassCard, Container, Grid } from '../components/UI';
 import { AWARENESS_SIGNS, RESOURCES } from '../data/dummyData';
+import { ChevronLeft, Puzzle, CheckCircle2, Phone, MapPin, Clock, Globe, ArrowRight } from 'lucide-react';
 
 export default function AwarenessPage() {
   const navigate = useNavigate();
@@ -26,117 +27,201 @@ export default function AwarenessPage() {
   ];
 
   return (
-    <PageWrapper style={{ paddingBottom: 60 }}>
+    <PageWrapper>
       
       {/* Hero */}
-      <section style={{ background: 'linear-gradient(135deg, var(--orange-pale) 0%, white 100%)', padding: '40px 24px 80px', textAlign: 'center', borderBottom: '1px solid var(--border)', position: 'relative' }}>
-        <div className="container animate-fadeInUp">
-          <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 20 }}>
-            <button
-              onClick={() => navigate('/')}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                fontSize: '0.85rem', fontWeight: 600, color: 'var(--mid)',
-                cursor: 'pointer', background: 'none', border: 'none', padding: '4px 0',
-                fontFamily: 'var(--font-body)', transition: 'color 0.2s ease'
-              }}
-              onMouseEnter={e => e.currentTarget.style.color = 'var(--orange)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'var(--mid)'}
-            >
-              &larr; Back to Home
-            </button>
+      <section style={{ 
+        background: 'linear-gradient(135deg, var(--orange-pale) 0%, white 100%)', 
+        padding: '80px 0 120px', 
+        textAlign: 'center', 
+        borderBottom: '1.5px solid var(--border)', 
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <div style={{ position: 'absolute', top: -100, right: -100, width: 300, height: 300, background: 'var(--yellow)', borderRadius: '50%', opacity: 0.1, filter: 'blur(60px)' }} />
+        
+        <Container>
+          <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 40 }}>
+            <Btn variant="ghost" onClick={() => navigate('/')} style={{ border: '1.5px solid var(--border)', background: 'white' }}>
+              <ChevronLeft size={18} /> Back to Home
+            </Btn>
           </div>
-          <div style={{ fontSize: '3rem', marginBottom: 16 }}>🧩</div>
-          <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: '2.5rem', color: 'var(--dark)', marginBottom: 12 }}>
-            Autism Awareness & Resources
+          
+          <div className="animate-scaleIn" style={{ 
+            width: 88, height: 88, borderRadius: '28px', background: 'var(--orange)', 
+            color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 28px', boxShadow: 'var(--shadow-lg)'
+          }}>
+            <Puzzle size={44} />
+          </div>
+
+          <h1 className="animate-fadeInUp" style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: 'clamp(2.2rem, 5vw, 3.8rem)', color: 'var(--dark)', marginBottom: 24, letterSpacing: '-0.02em' }}>
+            Autism Awareness <br /> & Resources
           </h1>
-          <p style={{ fontSize: '1.05rem', color: 'var(--mid)', maxWidth: 600, margin: '0 auto', lineHeight: 1.6 }}>
-            Early detection is key to better outcomes. Learn about the early signs of autism, use our quick checklist, and find support centres near you.
+          <p className="animate-fadeInUp delay-1" style={{ fontSize: '1.25rem', color: 'var(--mid)', maxWidth: 750, margin: '0 auto', lineHeight: 1.8, fontWeight: 500, opacity: 0.9 }}>
+            Early detection is the most powerful tool for better outcomes. Learn about common indicators and find professional support centers near you.
           </p>
-        </div>
+        </Container>
       </section>
 
-      <div className="container" style={{ padding: '60px 24px' }}>
+      <Container style={{ padding: '100px 0' }}>
         
         {/* Early Signs */}
-        <div style={{ marginBottom: 80 }}>
-          <SectionHeading label="Learn" title="Early Signs of Autism" subtitle="Children develop at their own pace, but these are common indicators to watch for." center />
-          <div className="grid-4">
+        <div style={{ marginBottom: 120 }}>
+          <SectionHeading 
+            label="Learning" 
+            title="Early Developmental Signs" 
+            subtitle="Every child follows their own timeline, but these are key milestones to monitor during early childhood." 
+            center 
+          />
+          <Grid cols={4} gap="24px">
             {AWARENESS_SIGNS.map((s, i) => (
-              <Card key={i} className={`animate-fadeInUp delay-${(i % 4) + 1}`} style={{ padding: 24, transition: 'all 0.3s ease' }} 
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--orange)'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-              >
-                <div style={{ fontSize: '2.2rem', marginBottom: 12 }}>{s.emoji}</div>
-                <h3 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1rem', color: 'var(--dark)', marginBottom: 6 }}>{s.title}</h3>
-                <p style={{ fontSize: '0.84rem', color: 'var(--mid)', lineHeight: 1.6 }}>{s.description}</p>
-              </Card>
+              <AnimatedCard key={i} delay={i * 0.1}>
+                <Card premium p="40px" style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                  <div style={{ fontSize: '3.5rem', marginBottom: 24, filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.12))' }}>{s.emoji}</div>
+                  <h3 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.2rem', color: 'var(--dark)', marginBottom: 14 }}>{s.title}</h3>
+                  <p style={{ fontSize: '0.95rem', color: 'var(--mid)', lineHeight: 1.7, margin: 0, fontWeight: 500 }}>{s.description}</p>
+                </Card>
+              </AnimatedCard>
             ))}
-          </div>
+          </Grid>
         </div>
 
         {/* Checklist */}
-        <div className="grid-2" style={{ marginBottom: 80, alignItems: 'center', gap: 40 }}>
-          <div className="animate-slideRight">
-            <SectionHeading label="Observe" title="Quick Awareness Checklist" subtitle="If you notice several of these behaviours in your child, it may be time to consult a paediatrician." />
-            <div style={{ background: 'var(--orange)', color: 'white', padding: '6px 14px', borderRadius: 'var(--radius-full)', display: 'inline-block', fontSize: '0.8rem', fontWeight: 700, marginBottom: 24 }}>
-              {checkedItems.size} of 8 signs observed
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, marginBottom: 120, alignItems: 'center' }}>
+          <div className="animate-slideLeft">
+            <SectionHeading 
+              label="Observation" 
+              title="Quick Indicators Checklist" 
+              subtitle="If you identify several of these patterns consistently, we recommend a formal screening or pediatric consultation." 
+            />
+            
+            <div style={{ 
+              background: 'white', padding: '32px', borderRadius: 'var(--radius-lg)', 
+              border: '1.5px solid var(--border)', boxShadow: 'var(--shadow-md)',
+              marginBottom: 40
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--muted)', letterSpacing: '0.05em' }}>SIGNS DETECTED</span>
+                <span style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--orange-solid)' }}>{checkedItems.size} <span style={{ color: 'var(--muted)', fontSize: '1rem' }}>/ 8</span></span>
+              </div>
+              <div style={{ height: 10, background: 'var(--orange-pale)', borderRadius: 5, overflow: 'hidden', border: '1px solid var(--border-light)' }}>
+                <div style={{ width: `${(checkedItems.size / 8) * 100}%`, height: '100%', background: 'var(--orange)', transition: 'width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' }} />
+              </div>
             </div>
+
             {checkedItems.size >= 4 && (
-              <div className="animate-fadeIn" style={{ background: 'var(--red-pale)', color: '#991B1B', padding: '12px 16px', borderRadius: 'var(--radius-sm)', fontSize: '0.85rem', fontWeight: 600, marginBottom: 24, border: '1px solid var(--red)' }}>
-                ⚠️ You've noted {checkedItems.size} signs. We highly recommend completing the full M-CHAT screening or consulting a doctor.
+              <div className="animate-fadeIn" style={{ background: 'var(--red-pale)', color: '#991B1B', padding: '20px 24px', borderRadius: 'var(--radius-md)', fontSize: '1rem', fontWeight: 700, marginBottom: 40, border: '1.5px solid rgba(239,68,68,0.2)', display: 'flex', gap: 16, alignItems: 'center' }}>
+                <CheckCircle2 size={28} style={{ flexShrink: 0 }} />
+                <span>You've noted {checkedItems.size} signs. We strongly suggest completing our full AI screening or consulting a specialist.</span>
               </div>
             )}
-            <Btn size="lg" onClick={() => window.location.href='/login'}>Start Full Screening</Btn>
+            
+            <Btn size="lg" onClick={() => navigate('/login')} style={{ width: '100%', maxWidth: 340 }}>
+              Start Full AI Screening <ArrowRight size={20} />
+            </Btn>
           </div>
           
-          <Card className="animate-slideLeft delay-2" style={{ padding: '32px 40px', background: 'white' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {CHECKLIST.map((text, i) => (
-                <label key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer', padding: '10px 14px', borderRadius: 'var(--radius-sm)', background: checkedItems.has(i) ? 'var(--orange-pale)' : 'transparent', transition: 'background 0.2s' }}>
-                  <input type="checkbox" checked={checkedItems.has(i)} onChange={() => handleCheck(i)} style={{ accentColor: 'var(--orange)', width: 18, height: 18, marginTop: 2, cursor: 'pointer' }} />
-                  <span style={{ fontSize: '0.9rem', color: checkedItems.has(i) ? 'var(--orange-deep)' : 'var(--dark)', fontWeight: checkedItems.has(i) ? 600 : 400, lineHeight: 1.5 }}>
-                    {text}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </Card>
+          <AnimatedCard delay={0.2}>
+            <Card premium p="40px" style={{ background: 'white' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                {CHECKLIST.map((text, i) => (
+                  <label key={i} style={{ 
+                    display: 'flex', alignItems: 'center', gap: 18, cursor: 'pointer', 
+                    padding: '14px 20px', borderRadius: 'var(--radius-md)', 
+                    background: checkedItems.has(i) ? 'var(--orange-pale)' : 'white', 
+                    border: `1.5px solid ${checkedItems.has(i) ? 'var(--orange-light)' : 'var(--border)'}`,
+                    transition: 'var(--transition)' 
+                  }}>
+                    <input 
+                      type="checkbox" 
+                      checked={checkedItems.has(i)} 
+                      onChange={() => handleCheck(i)} 
+                      style={{ accentColor: 'var(--orange-solid)', width: 24, height: 24, cursor: 'pointer' }} 
+                    />
+                    <span style={{ 
+                      fontSize: '1.05rem', 
+                      color: checkedItems.has(i) ? 'var(--orange-deep)' : 'var(--dark)', 
+                      fontWeight: checkedItems.has(i) ? 800 : 600, 
+                      lineHeight: 1.4,
+                      opacity: checkedItems.has(i) ? 1 : 0.8
+                    }}>
+                      {text}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </Card>
+          </AnimatedCard>
         </div>
 
         {/* Resources */}
-        <div style={{ marginBottom: 80 }}>
-          <SectionHeading label="Support" title="Therapy Centres in India" subtitle="Find professional support and early intervention centres." center />
-          <div className="grid-3">
+        <div style={{ marginBottom: 120 }}>
+          <SectionHeading 
+            label="Support Network" 
+            title="Premier Therapy Centers" 
+            subtitle="Access professional guidance and evidence-based intervention programs." 
+            center 
+          />
+          <Grid cols={3} gap="28px">
             {RESOURCES.map((r, i) => (
-              <Card key={i} className={`animate-fadeInUp delay-${i+1}`} style={{ padding: 24, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'inline-block', background: 'var(--orange-pale)', color: 'var(--orange-deep)', padding: '4px 10px', borderRadius: 'var(--radius-full)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: 12, alignSelf: 'flex-start' }}>
-                  {r.type}
-                </div>
-                <h3 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.1rem', color: 'var(--dark)', marginBottom: 12 }}>{r.name}</h3>
-                <div style={{ fontSize: '0.85rem', color: 'var(--mid)', marginBottom: 8, display: 'flex', gap: 8 }}><span>📍</span> {r.address}</div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--mid)', marginBottom: 8, display: 'flex', gap: 8 }}><span>📞</span> {r.phone}</div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--mid)', marginBottom: 20, display: 'flex', gap: 8 }}><span>🕒</span> {r.hours}</div>
-                <Btn variant="outline" size="sm" style={{ marginTop: 'auto', width: '100%' }} onClick={() => alert(`Opening maps for ${r.name}...`)}>Get Directions</Btn>
-              </Card>
+              <AnimatedCard key={i} delay={i * 0.1}>
+                <Card premium p="40px" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ 
+                    display: 'inline-flex', background: 'var(--orange-pale)', color: 'var(--orange-deep)', 
+                    padding: '8px 16px', borderRadius: 'var(--radius-full)', fontSize: '0.8rem', 
+                    fontWeight: 900, textTransform: 'uppercase', marginBottom: 24, alignSelf: 'flex-start',
+                    letterSpacing: '0.08em', border: '1px solid var(--border)'
+                  }}>
+                    {r.type}
+                  </div>
+                  <h3 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: '1.4rem', color: 'var(--dark)', marginBottom: 24, letterSpacing: '-0.01em' }}>{r.name}</h3>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 32 }}>
+                    <div style={{ fontSize: '0.95rem', color: 'var(--mid)', display: 'flex', gap: 14, alignItems: 'center', fontWeight: 600 }}>
+                      <MapPin size={20} className="text-orange" /> {r.address}
+                    </div>
+                    <div style={{ fontSize: '0.95rem', color: 'var(--mid)', display: 'flex', gap: 14, alignItems: 'center', fontWeight: 600 }}>
+                      <Phone size={20} className="text-orange" /> {r.phone}
+                    </div>
+                    <div style={{ fontSize: '0.95rem', color: 'var(--mid)', display: 'flex', gap: 14, alignItems: 'center', fontWeight: 600 }}>
+                      <Clock size={20} className="text-orange" /> {r.hours}
+                    </div>
+                  </div>
+                  
+                  <Btn variant="ghost" size="md" style={{ marginTop: 'auto', width: '100%', border: '1.5px solid var(--border)' }}>
+                    View Location
+                  </Btn>
+                </Card>
+              </AnimatedCard>
             ))}
-          </div>
+          </Grid>
         </div>
 
-        {/* Useful Links */}
-        <div>
-          <SectionHeading label="Learn More" title="Useful Links" center />
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
-            {['World Health Organization (WHO)', 'NIMHANS', 'Action For Autism', 'Autism Society of India'].map((l, i) => (
-              <button key={i} style={{ padding: '12px 24px', background: 'var(--cream)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-full)', fontSize: '0.85rem', fontWeight: 700, color: 'var(--dark)', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'var(--font-body)' }}
-                onMouseEnter={e => { e.target.style.background = 'var(--orange)'; e.target.style.color = 'white'; e.target.style.borderColor = 'var(--orange)'; }}
-                onMouseLeave={e => { e.target.style.background = 'var(--cream)'; e.target.style.color = 'var(--dark)'; e.target.style.borderColor = 'var(--border)'; }}
-              >{l}</button>
-            ))}
-          </div>
-        </div>
+        {/* Global Links */}
+        <AnimatedCard delay={0.4}>
+          <GlassCard premium p="60px 40px" style={{ textAlign: 'center' }}>
+            <SectionHeading title="Global Health Resources" subtitle="Scientific publications and international guidelines on neurodevelopmental health." center />
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 20, flexWrap: 'wrap', marginTop: 40 }}>
+              {['WHO Guidelines', 'NIMHANS Research', 'Action For Autism', 'Autism Society'].map((l, i) => (
+                <button key={i} style={{ 
+                  padding: '16px 32px', background: 'white', border: '1.5px solid var(--border)', 
+                  borderRadius: 'var(--radius-full)', fontSize: '0.95rem', fontWeight: 800, 
+                  color: 'var(--dark)', cursor: 'pointer', transition: 'var(--transition)', 
+                  fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', gap: 12,
+                  boxShadow: 'var(--shadow-sm)'
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--orange-solid)'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
+                >
+                  <Globe size={20} className="text-orange" /> {l}
+                </button>
+              ))}
+            </div>
+          </GlassCard>
+        </AnimatedCard>
 
-      </div>
+      </Container>
     </PageWrapper>
   );
 }

@@ -20,6 +20,7 @@ import AwarenessPage    from './pages/AwarenessPage';
 import AdminPanel       from './pages/AdminPanel';
 import NotFoundPage     from './pages/NotFoundPage';
 import DrawingAnalysisPage from './pages/DrawingAnalysisPage';
+import FaceEyeScanPage from './pages/FaceEyeScanPage';
 
 import Navbar from './components/Navbar';
 import Chatbot from './components/Chatbot';
@@ -47,6 +48,7 @@ function AppLayout() {
         <Route path="/login"     element={<LoginPage />} />
         <Route path="/awareness" element={<AwarenessPage />} />
         <Route path="/drawing-analysis" element={<DrawingAnalysisPage />} />
+        <Route path="/face-eye-scan" element={<FaceEyeScanPage />} />
         <Route path="*"          element={<NotFoundPage />} />
 
         {/* Parent */}

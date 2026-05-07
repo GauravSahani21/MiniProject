@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { children as childrenApi, screenings as screeningsApi, trajectory as trajectoryApi } from '../api';
-import { PageWrapper, SectionHeading, StatCard, Card, Btn, Badge, ScoreBar, Modal, useToast, EmptyState } from '../components/UI';
+import { Container, PageWrapper, SectionHeading, StatCard, Card, Btn, Badge, ScoreBar, Modal, useToast, EmptyState, Grid } from '../components/UI';
 import RiskTrajectoryChart, { trendMeta } from '../components/RiskTrajectoryChart';
 import InterventionPlan from './InterventionPlan';
 
@@ -109,112 +109,112 @@ export default function ParentDashboard() {
       
       {/* Confirm Delete Modal */}
       <Modal open={!!deleteModal} onClose={() => setDeleteModal(null)} title="Remove Child Profile">
-        <p style={{ fontSize: '0.95rem', color: 'var(--dark)', marginBottom: 24 }}>
+        <p style={{ fontSize: '1rem', color: 'var(--dark)', marginBottom: 28, lineHeight: 1.6 }}>
           Are you sure you want to remove <strong>{deleteModal?.name}</strong>? This action cannot be undone and will delete their screening history.
         </p>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: 14, justifyContent: 'flex-end' }}>
           <Btn variant="ghost" onClick={() => setDeleteModal(null)}>Cancel</Btn>
           <Btn variant="danger" onClick={confirmDelete}>Remove Child</Btn>
         </div>
       </Modal>
 
-      <div className="container" style={{ padding: '40px 24px' }}>
+      <Container style={{ padding: '60px 0' }}>
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 36 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 48 }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: '2.2rem', color: 'var(--dark)' }}>
+            <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: '2.8rem', color: 'var(--dark)', letterSpacing: '-0.02em' }}>
             Hello, {user?.name?.split(' ')[0] || 'there'} 👋
             </h1>
-            <p style={{ fontSize: '0.9rem', color: 'var(--muted)', marginTop: 4 }}>
-              Today is {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            <p style={{ fontSize: '1.05rem', color: 'var(--muted)', marginTop: 6, fontWeight: 500 }}>
+              Welcome back to your dashboard. Today is {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
           </div>
+          <Btn onClick={() => navigate('/add-child')} icon={<span style={{ fontSize: '1.2rem' }}>+</span>}>Add Child</Btn>
         </div>
 
         {/* Stats */}
-        <div className="grid-4" style={{ marginBottom: 48 }}>
+        <Grid cols={4} style={{ marginBottom: 64 }}>
           <StatCard icon="👶" value={children.length} label="Children Tracked" bg="var(--orange-pale)" color="var(--orange-deep)" />
           <StatCard icon="📋" value={allScreenings.length} label="Total Screenings" bg="#eff6ff" color="#2563eb" />
           <StatCard icon="⚠️" value={highRiskCount} label="High Risk Alerts" bg="var(--red-pale)" color="var(--red)" />
           <StatCard icon="📅" value={lastScreening} label="Last Screening" bg="#f5f3ff" color="#7c3aed" />
-        </div>
+        </Grid>
 
         {/* Tabs */}
-        <div className="tab-bar" style={{ marginBottom: 22 }}>
+        <div className="tab-bar" style={{ marginBottom: 32 }}>
           <button className={`tab-btn ${tab === 'children' ? 'active' : ''}`} onClick={() => setTab('children')}>
-            Children
+            Children Profiles
           </button>
           <button className={`tab-btn ${tab === 'interventions' ? 'active' : ''}`} onClick={() => setTab('interventions')}>
-            Intervention Plan
+            Intervention Plans
           </button>
         </div>
 
         {tab === 'children' && (
-          <>
+          <div className="animate-fadeIn">
             {/* Children Grid */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <SectionHeading title="Your Children" />
-              <Btn size="sm" onClick={() => navigate('/add-child')}>+ Add Child</Btn>
-            </div>
+            <SectionHeading title="Your Children" subtitle="Manage your children's profiles and start diagnostic screenings." />
 
             {children.length === 0 ? (
-              <Card style={{ padding: 40 }}>
+              <Card premium p="60px" style={{ marginBottom: 48 }}>
                 <EmptyState icon="👶" title="No children added yet" desc="Add your child's profile to start the clinically validated M-CHAT screening process." action={<Btn onClick={() => navigate('/add-child')}>Add Child Profile</Btn>} />
               </Card>
             ) : (
-              <div className="grid-2" style={{ marginBottom: 48 }}>
+              <Grid cols={2} style={{ marginBottom: 64 }}>
                 {children.map((c, i) => (
-                  <Card key={c._id} className={`animate-fadeInUp delay-${i+1}`} style={{ padding: '24px 28px', position: 'relative' }}>
+                  <Card key={c._id} premium p="32px" className={`animate-fadeInUp delay-${i+1}`} style={{ position: 'relative' }}>
                 {/* Actions */}
-                <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 6 }}>
-                  <button onClick={() => navigate(`/parent/child/${c._id}/edit`)} style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--cream)', color: 'var(--mid)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', border: '1px solid var(--border)' }}>✏️</button>
-                  <button onClick={() => setDeleteModal(c)} style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--red-pale)', color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', border: 'none' }}>🗑️</button>
+                <div style={{ position: 'absolute', top: 20, right: 20, display: 'flex', gap: 8 }}>
+                  <button onClick={() => navigate(`/parent/child/${c._id}/edit`)} style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--cream)', color: 'var(--mid)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', border: '1.5px solid var(--border)', transition: 'var(--transition)' }}>✏️</button>
+                  <button onClick={() => setDeleteModal(c)} style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--red-pale)', color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', border: 'none', transition: 'var(--transition)' }}>🗑️</button>
                 </div>
 
-                <div style={{ display: 'flex', gap: 20, alignItems: 'center', marginBottom: 20 }}>
-                  <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--orange-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem' }}>
+                <div style={{ display: 'flex', gap: 24, alignItems: 'center', marginBottom: 28 }}>
+                  <div style={{ width: 84, height: 84, borderRadius: '50%', background: 'var(--orange-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', border: '2px solid var(--white)', boxShadow: 'var(--shadow-sm)' }}>
                     {c.avatar || '👶'}
                   </div>
                   <div>
-                    <h3 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.2rem', color: 'var(--dark)' }}>{c.name}</h3>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--muted)', display: 'flex', gap: 10, marginTop: 4 }}>
-                      <span>{c.dob ? new Date().getFullYear() - new Date(c.dob).getFullYear() : '--'} years old</span> • <span>{c.gender}</span> • <span>DOB: {c.dob ? new Date(c.dob).toLocaleDateString() : '--'}</span>
+                    <h3 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: '1.4rem', color: 'var(--dark)' }}>{c.name}</h3>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--muted)', display: 'flex', gap: 12, marginTop: 6, fontWeight: 600 }}>
+                      <span>{c.dob ? new Date().getFullYear() - new Date(c.dob).getFullYear() : '--'} years old</span>
+                      <span style={{ opacity: 0.3 }}>|</span>
+                      <span>{c.gender}</span>
                     </div>
                   </div>
                 </div>
 
-                <div style={{ background: 'var(--cream)', borderRadius: 'var(--radius-md)', padding: 16, marginBottom: 20 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--mid)' }}>Latest Screening ({c.lastScreen ? new Date(c.lastScreen).toLocaleDateString() : 'N/A'})</span>
+                <div style={{ background: 'var(--cream)', borderRadius: 'var(--radius-sm)', padding: 20, marginBottom: 28, border: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--mid)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Latest Screening</span>
                     <Badge risk={c.risk || 'Low'} />
                   </div>
-                  <ScoreBar score={c.score || 0} total={c.total || 20} risk={c.risk || 'Low'} />
-                  <div style={{ fontSize: '0.74rem', color: 'var(--muted)', textAlign: 'right', marginTop: 6, fontWeight: 700 }}>
-                    Score: {c.score || 0} / {c.total || 20}
+                  <ScoreBar score={c.score || 0} total={c.total || 20} risk={c.risk || 'Low'} height={12} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 600 }}>{c.lastScreen ? new Date(c.lastScreen).toLocaleDateString('en-GB') : 'No screenings yet'}</span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--dark)', fontWeight: 900 }}>Score: {c.score || 0} / {c.total || 20}</span>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <Btn variant="primary" style={{ flex: 1 }} onClick={() => navigate(`/screening/${c._id}`)}>Screen Now</Btn>
-                  <Btn variant="outline" style={{ flex: 1 }} onClick={() => navigate(`/report?childId=${c._id}`)}>View Reports</Btn>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <Btn variant="primary" style={{ flex: 1.5 }} onClick={() => navigate(`/screening/${c._id}`)}>Screen Now</Btn>
+                  <Btn variant="outline" style={{ flex: 1 }} onClick={() => navigate(`/report?childId=${c._id}`)}>Reports</Btn>
                   <Btn variant="ghost" onClick={() => toggleTrajectory(c._id)}>
-                    {expandedChildId === c._id ? 'Hide Trend' : 'Risk Trend'}
+                    {expandedChildId === c._id ? 'Hide Trend' : 'Trends'}
                   </Btn>
-                  <Btn variant="ghost" onClick={() => navigate(`/parent/child/${c._id}/details`)}>Details</Btn>
                 </div>
 
                 {expandedChildId === c._id && (
-                  <div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+                  <div className="animate-fadeIn" style={{ marginTop: 24, paddingTop: 20, borderTop: '1.5px dashed var(--border)' }}>
                     {loadingTrajectoryByChild[c._id] ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--muted)', fontSize: '0.85rem' }}>
-                        <div className="animate-spin" style={{ width: 16, height: 16, border: '2px solid #fde68a', borderTopColor: '#f59e0b', borderRadius: '50%' }} />
-                        <span>Loading trajectory...</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--muted)', fontSize: '0.9rem', padding: '20px 0' }}>
+                        <Spinner size={20} />
+                        <span>Analyzing risk trajectory...</span>
                       </div>
                     ) : trajectoryByChild[c._id] ? (
                       <>
-                        <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--dark)' }}>
-                            Longitudinal Risk Trajectory
+                        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 900, color: 'var(--dark)' }}>
+                            Longitudinal Risk Analysis
                           </h4>
                           {(() => {
                             const trend = trendMeta(trajectoryByChild[c._id]?.trend);
@@ -222,14 +222,16 @@ export default function ParentDashboard() {
                               <span
                                 style={{
                                   display: 'inline-flex',
-                                  gap: 6,
+                                  gap: 8,
                                   alignItems: 'center',
-                                  padding: '5px 9px',
+                                  padding: '6px 12px',
                                   borderRadius: 999,
                                   background: trend.bg,
                                   color: trend.color,
                                   fontSize: '0.75rem',
-                                  fontWeight: 700,
+                                  fontWeight: 800,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.04em'
                                 }}
                               >
                                 <span>{trend.icon}</span>
@@ -238,94 +240,84 @@ export default function ParentDashboard() {
                             );
                           })()}
                         </div>
-                        <RiskTrajectoryChart trajectoryData={trajectoryByChild[c._id]} height={220} />
+                        <RiskTrajectoryChart trajectoryData={trajectoryByChild[c._id]} height={240} />
                       </>
-                    ) : trajectoryErrorByChild[c._id] ? (
-                      <p style={{ fontSize: '0.85rem', color: 'var(--red)' }}>
-                        Unable to load trajectory right now. Please try again.
-                      </p>
                     ) : (
-                      (() => {
-                        const screeningCount = allScreenings.filter(
-                          (s) => String(s.childId?._id || s.childId) === String(c._id)
-                        ).length;
-                        return screeningCount === 0 ? (
-                          <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
-                            Trajectory data not available yet.
-                          </p>
-                        ) : (
-                          <p style={{ fontSize: '0.85rem', color: 'var(--orange)' }}>
-                            Screening data exists. Click Risk Trend again to retry loading chart.
-                          </p>
-                        );
-                      })()
+                      <p style={{ fontSize: '0.9rem', color: 'var(--muted)', textAlign: 'center', padding: '20px 0' }}>
+                        Unable to load trajectory data. Please ensure you have completed at least one screening.
+                      </p>
                     )}
                   </div>
                 )}
                   </Card>
                 ))}
-              </div>
+              </Grid>
             )}
 
             {/* History Preview */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <SectionHeading title="Recent Screenings" />
-              <button onClick={() => navigate('/report')} style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--orange)', background: 'none', border: 'none', cursor: 'pointer' }}>View All →</button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+              <SectionHeading title="Recent Activity" subtitle="Quick overview of the latest screening results." style={{ marginBottom: 0 }} />
+              <Btn variant="ghost" onClick={() => navigate('/report')}>View Full History →</Btn>
             </div>
 
-            <Card className="table-wrap">
+            <Card className="table-wrap" premium p="0">
               <table>
                 <thead>
                   <tr>
                     <th>Date</th>
-                    <th>Child</th>
-                    <th>Score</th>
-                    <th>Risk Level</th>
+                    <th>Child Profile</th>
+                    <th>Diagnostic Score</th>
+                    <th>Risk Classification</th>
                     <th>Status</th>
-                    <th style={{ textAlign: 'right' }}>Action</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {recentScreenings.length > 0 ? recentScreenings.map((row, i) => (
                     <tr key={row._id} className={`animate-fadeInUp delay-${i+2}`}>
-                      <td style={{ fontWeight: 600 }}>{new Date(row.date).toLocaleDateString()}</td>
-                      <td>{row.childName}</td>
-                      <td>{row.score} / {row.total}</td>
+                      <td style={{ fontWeight: 700 }}>{new Date(row.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                      <td style={{ fontWeight: 600 }}>{row.childName}</td>
+                      <td style={{ fontWeight: 900 }}>{row.score} <span style={{ opacity: 0.3, fontWeight: 500 }}>/ {row.total}</span></td>
                       <td><Badge risk={row.risk} /></td>
-                      <td style={{ textTransform: 'capitalize' }}>{row.status}</td>
+                      <td>
+                        <span className={`status-pill ${row.status === 'completed' ? 'reviewed' : 'pending'}`} style={{
+                          padding: '4px 10px',
+                          borderRadius: 99,
+                          fontSize: '0.75rem',
+                          fontWeight: 800,
+                          background: row.status === 'completed' ? 'var(--green-pale)' : 'var(--amber-pale)',
+                          color: row.status === 'completed' ? '#166534' : '#92400e',
+                          textTransform: 'uppercase'
+                        }}>
+                          {row.status}
+                        </span>
+                      </td>
                       <td style={{ textAlign: 'right' }}>
-                        <Btn size="sm" variant="ghost" onClick={() => navigate(`/report?childId=${row.childId}`)}>History</Btn>
+                        <Btn size="sm" variant="ghost" onClick={() => navigate(`/report?childId=${row.childId}`)}>Details</Btn>
                       </td>
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan="6" style={{ padding: 30, textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>No screenings found.</td>
+                      <td colSpan="6" style={{ padding: 60, textAlign: 'center', color: 'var(--muted)', fontSize: '1rem' }}>No recent screening activity found.</td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </Card>
-          </>
+          </div>
         )}
 
         {tab === 'interventions' && (
-          <>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <SectionHeading title="Intervention Plan" />
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <label style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--mid)' }}>Child</label>
+          <div className="animate-fadeIn">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+              <SectionHeading title="Personalized Interventions" subtitle="Evidence-based activities tailored to your child's risk profile." style={{ marginBottom: 0 }} />
+              <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 900, color: 'var(--mid)', textTransform: 'uppercase' }}>Select Child</label>
                 <select
                   value={selectedChildForIntervention}
                   onChange={(e) => setSelectedChildForIntervention(e.target.value)}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 12,
-                    border: '1px solid var(--border)',
-                    background: 'white',
-                    minWidth: 220,
-                    fontWeight: 700,
-                    color: 'var(--dark)'
-                  }}
+                  className="form-select"
+                  style={{ minWidth: 240, fontWeight: 700 }}
                 >
                   {children.map((c) => (
                     <option key={c._id} value={c._id}>{c.name}</option>
@@ -335,9 +327,9 @@ export default function ParentDashboard() {
             </div>
 
             <InterventionPlan childId={selectedChildForIntervention} />
-          </>
+          </div>
         )}
-      </div>
+      </Container>
     </PageWrapper>
   );
 }

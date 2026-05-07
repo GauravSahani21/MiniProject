@@ -50,6 +50,7 @@ autisense/
         ├── DoctorDashboard.jsx  # Page 7
         ├── AwarenessPage.jsx    # Page 9
         ├── AdminPanel.jsx       # Page 10
+        ├── FaceEyeScanPage.jsx  # Page 11 (Webcam analysis)
         └── NotFoundPage.jsx     # 404
 ```
 
@@ -69,6 +70,7 @@ autisense/
 | 8 | AI Chatbot Widget | Floating (all pages) | All |
 | 9 | Awareness & Resources | `/awareness` | Public |
 | 10 | Admin Panel | `/admin` | Admin |
+| 11 | Face & Eye Scan | `/face-eye-scan` | Public |
 
 ---
 
@@ -99,7 +101,11 @@ autisense/
 - Quick suggestion chips (first open)
 - 6 keyword-matched Q&A pairs: signs, M-CHAT, therapy, causes, doctor, age
 - Fake typing indicator (0.9–1.3s random delay)
-- Slide-in panel animation
+### 👁️ Face & Eye Scan (Page 11)
+- Live webcam integration using `@mediapipe/tasks-vision`
+- Tracks facial expressions, eye contact (gaze fixation), blink rate, and head movement stability
+- Generates risk analysis dynamically through Google Gemini Vision APIs
+- Real-time visual feedback drawing landmarks on the canvas
 
 ### ⚙️ Admin Panel (Page 10)
 - Collapsible sidebar (collapses to icon-only)
