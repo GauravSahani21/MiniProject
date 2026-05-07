@@ -75,6 +75,7 @@ export default function ChildDetailPage() {
   }
 
   const computedAge = child.age ?? (child.dob ? new Date().getFullYear() - new Date(child.dob).getFullYear() : '--');
+  const displayGender = child.gender ? child.gender.charAt(0).toUpperCase() + child.gender.slice(1) : '--';
 
   return (
     <PageWrapper style={{ padding: '40px 24px' }}>
@@ -90,7 +91,7 @@ export default function ChildDetailPage() {
               <div>
                 <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: '1.8rem', color: 'var(--dark)' }}>{child.name}</h1>
                 <div style={{ fontSize: '0.9rem', color: 'var(--muted)', marginTop: 4 }}>
-                  {computedAge} yrs • {child.gender} • Guardian: {child.guardian}
+                  {computedAge} yrs • {displayGender} • Guardian: {child.guardian}
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
@@ -169,7 +170,7 @@ export default function ChildDetailPage() {
                 <div>
                   <div className="form-group"><label className="form-label">Full Name</label><div style={{ fontWeight: 600 }}>{child.name}</div></div>
                   <div className="form-group"><label className="form-label">Date of Birth</label><div style={{ fontWeight: 600 }}>{child.dob ? new Date(child.dob).toLocaleDateString() : 'N/A'}</div></div>
-                  <div className="form-group"><label className="form-label">Gender</label><div style={{ fontWeight: 600 }}>{child.gender}</div></div>
+                  <div className="form-group"><label className="form-label">Gender</label><div style={{ fontWeight: 600 }}>{displayGender}</div></div>
                 </div>
                 <div>
                   <div className="form-group"><label className="form-label">Guardian Name</label><div style={{ fontWeight: 600 }}>{child.guardian}</div></div>

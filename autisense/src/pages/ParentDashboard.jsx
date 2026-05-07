@@ -178,7 +178,7 @@ export default function ParentDashboard() {
                     <div style={{ fontSize: '0.9rem', color: 'var(--muted)', display: 'flex', gap: 12, marginTop: 6, fontWeight: 600 }}>
                       <span>{c.dob ? new Date().getFullYear() - new Date(c.dob).getFullYear() : '--'} years old</span>
                       <span style={{ opacity: 0.3 }}>|</span>
-                      <span>{c.gender}</span>
+                      <span>{c.gender ? c.gender.charAt(0).toUpperCase() + c.gender.slice(1) : '--'}</span>
                     </div>
                   </div>
                 </div>

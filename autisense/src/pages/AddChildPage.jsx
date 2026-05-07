@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageWrapper, Card, Btn, Input, useToast, BackBtn } from '../components/UI';
+import { useAuth } from '../context/AuthContext';
+import { children as childrenApi } from '../api';
 
 export default function AddChildPage() {
   const navigate = useNavigate();
   const { showToast, ToastComponent } = useToast();
+  const { token } = useAuth();
 
   const [formData, setFormData] = useState({
     name: '', dob: '', gender: 'Boy', guardian: '', photo: null
@@ -22,7 +25,7 @@ export default function AddChildPage() {
     setFormData({ ...formData, photo: e.target.files[0] });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     let newErrs = {};
     if (!formData.name.trim()) newErrs.name = 'Child Name is required';
@@ -35,11 +38,20 @@ export default function AddChildPage() {
     }
 
     setSaving(true);
-    // Fake save to backend
-    setTimeout(() => {
+    try {
+      // Normalize display gender ('Boy'/'Girl') to DB enum ('male'/'female')
+      const payload = {
+        ...formData,
+        gender: formData.gender === 'Boy' ? 'male' : 'female'
+      };
+      await childrenApi.create(payload, token);
       showToast(`${formData.name}'s profile added successfully!`, 'success');
-      setTimeout(() => navigate('/parent'), 1200);
-    }, 800);
+      setTimeout(() => navigate('/parent'), 800);
+    } catch (err) {
+      showToast(err.message || 'Failed to add child', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { PageWrapper, Card, Btn, Input, useToast, Container } from '../components/UI';
+import { Card, Btn, Input, useToast, Container, GlassCard } from '../components/UI';
 
 export default function LoginPage() {
   const [tab, setTab] = useState('login'); // 'login' | 'register'
@@ -76,101 +76,155 @@ export default function LoginPage() {
   };
 
   return (
-    <PageWrapper style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
+    <div className="login-grid">
       {ToastComponent}
       
-      <Container style={{ maxWidth: 480 }}>
-        <div className="animate-fadeInUp" style={{ marginBottom: 20 }}>
-          <button
-            onClick={() => navigate('/')}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              fontSize: '0.9rem', fontWeight: 700, color: 'var(--muted)',
-              cursor: 'pointer', background: 'none', border: 'none', padding: '8px 0',
-              fontFamily: 'var(--font-body)', transition: 'var(--transition)'
-            }}
-            onMouseEnter={e => e.currentTarget.style.color = 'var(--orange-solid)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'var(--muted)'}
-          >
-            ← Back to Home
-          </button>
+      {/* Left Panel: Visual & Messaging */}
+      <div className="visual-panel">
+        <div className="animate-fadeInUp" style={{ maxWidth: 500 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 40 }}>
+             <span style={{ width: 16, height: 16, borderRadius: '50%', background: 'white', boxShadow: '0 0 15px rgba(255,255,255,0.5)' }} />
+             <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: '2rem', color: 'white' }}>
+               AutiSense
+             </span>
+          </div>
+          
+          <h1 style={{ fontSize: '3.2rem', fontWeight: 900, lineHeight: 1.2, marginBottom: 24, letterSpacing: '-0.02em', padding: '10px 0' }}>
+            Nurturing every <br />
+            <span style={{ opacity: 0.85 }}>milestone.</span>
+          </h1>
+          
+          <p style={{ fontSize: '1.2rem', opacity: 0.9, marginBottom: 48, lineHeight: 1.6, fontWeight: 500 }}>
+            Join thousands of parents and clinicians using AI-powered insights for early autism detection and personalized support.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {[
+              { icon: '🎯', text: '96.7% Screening Accuracy' },
+              { icon: '🤖', text: 'AI-Powered Drawing Analysis' },
+              { icon: '📈', text: 'Personalized Development Tracking' }
+            ].map((item, i) => (
+              <div key={i} className={`animate-fadeInUp delay-${i+2}`} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <span style={{ fontSize: '1.5rem', width: 48, height: 48, background: 'rgba(255,255,255,0.1)', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {item.icon}
+                </span>
+                <span style={{ fontWeight: 700, fontSize: '1rem' }}>{item.text}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <Card premium p="48px" className="animate-fadeInUp delay-1">
-          <div style={{ textAlign: 'center', marginBottom: 36 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 16 }}>
-               <span style={{ width: 14, height: 14, borderRadius: '50%', background: 'var(--orange)', boxShadow: '0 0 10px var(--orange-light)' }} />
-               <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: '1.8rem' }}>
-                 <span style={{ color: 'var(--orange-solid)' }}>Auti</span><span style={{ color: 'var(--dark)' }}>Sense</span>
-               </span>
+        <img 
+          src="/screening-illustration.png"
+          alt="Illustration"
+          className="animate-pulse-soft"
+          style={{
+            position: 'absolute',
+            bottom: '-5%',
+            right: '-5%',
+            width: '65%',
+            opacity: 0.25,
+            pointerEvents: 'none',
+            mixBlendMode: 'screen'
+          }}
+        />
+      </div>
+
+      {/* Right Panel: Form */}
+      <div className="form-panel">
+        <Container style={{ maxWidth: 520, padding: 0 }}>
+          <div className="animate-fadeInUp" style={{ marginBottom: 24 }}>
+            <button
+              onClick={() => navigate('/')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                fontSize: '0.95rem', fontWeight: 700, color: 'var(--muted)',
+                cursor: 'pointer', background: 'none', border: 'none', padding: '8px 0',
+                fontFamily: 'var(--font-body)', transition: 'var(--transition)'
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--orange-solid)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--muted)'}
+            >
+              ← Back to Home
+            </button>
+          </div>
+
+          <GlassCard p="48px" className="animate-fadeInUp delay-1" style={{ border: '1.5px solid white' }}>
+            <div style={{ textAlign: 'center', marginBottom: 40 }}>
+              <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: '2rem', color: 'var(--dark)', letterSpacing: '-0.02em' }}>
+                {tab === 'login' ? 'Welcome Back' : 'Create Account'}
+              </h2>
+              <p style={{ fontSize: '1rem', color: 'var(--muted)', marginTop: 8, fontWeight: 500 }}>
+                {tab === 'login' ? 'Enter your credentials to continue' : 'Start your journey with AutiSense today'}
+              </p>
             </div>
-            <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: '1.5rem', color: 'var(--dark)', letterSpacing: '-0.02em' }}>
-              {tab === 'login' ? 'Welcome Back 👋' : 'Create an Account 🧡'}
-            </h2>
-            <p style={{ fontSize: '0.95rem', color: 'var(--muted)', marginTop: 8, fontWeight: 500 }}>
-              {tab === 'login' ? 'Sign in to access your child\'s profile.' : 'Join AutiSense to start early screening.'}
-            </p>
-          </div>
 
-          {/* Tab Switcher */}
-          <div className="segmented-control" style={{ marginBottom: 24 }}>
-            <button className={`segment-btn ${tab === 'login' ? 'active' : ''}`} onClick={() => handleTab('login')}>Sign In</button>
-            <button className={`segment-btn ${tab === 'register' ? 'active' : ''}`} onClick={() => handleTab('register')}>Join Now</button>
-          </div>
-
-          {/* Role Selection */}
-          <div style={{ marginBottom: 32 }}>
-            <label className="form-label" style={{ marginBottom: 12, display: 'block', textAlign: 'center' }}>I am a...</label>
-            <div className="segmented-control">
-              <button type="button" className={`segment-btn ${formData.role === 'parent' ? 'active' : ''}`} onClick={() => setFormData({...formData, role: 'parent'})}>Parent</button>
-              <button type="button" className={`segment-btn ${formData.role === 'doctor' ? 'active' : ''}`} onClick={() => setFormData({...formData, role: 'doctor'})}>Doctor</button>
-              <button type="button" className={`segment-btn ${formData.role === 'admin' ? 'active' : ''}`} onClick={() => setFormData({...formData, role: 'admin'})}>Admin</button>
+            <div className="segmented-control" style={{ marginBottom: 32 }}>
+              <button className={`segment-btn ${tab === 'login' ? 'active' : ''}`} onClick={() => handleTab('login')}>Sign In</button>
+              <button className={`segment-btn ${tab === 'register' ? 'active' : ''}`} onClick={() => handleTab('register')}>Register</button>
             </div>
-          </div>
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {tab === 'register' && (
-              <Input label="Full Name" name="name" value={formData.name} onChange={handleChange} error={errors.name} placeholder="e.g. Rahul Sharma" />
-            )}
-            
-            <Input label="Email Address" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} placeholder="rahul@example.com" />
-
-            <Input label="Password" name="password" type="password" value={formData.password} onChange={handleChange} error={errors.password} placeholder="••••••••" />
-            
-            {tab === 'register' && (
-              <Input label="Confirm Password" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} error={errors.confirmPassword} placeholder="••••••••" />
-            )}
-
-            {tab === 'login' && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: -8 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: 'var(--muted)', cursor: 'pointer', fontWeight: 600 }}>
-                  <input type="checkbox" style={{ accentColor: 'var(--orange-solid)', cursor: 'pointer', width: 16, height: 16 }} defaultChecked /> Remember me
-                </label>
-                <button type="button" onClick={() => showToast('Check your email for reset instructions!', 'info')} style={{ fontSize: '0.85rem', color: 'var(--orange-solid)', fontWeight: 700 }}>
-                  Forgot?
-                </button>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <label className="form-label" style={{ textAlign: 'center' }}>Logging in as</label>
+                <div className="segmented-control">
+                  {['parent', 'doctor', 'admin'].map(r => (
+                    <button 
+                      key={r}
+                      type="button" 
+                      className={`segment-btn ${formData.role === r ? 'active' : ''}`} 
+                      onClick={() => setFormData({...formData, role: r})}
+                      style={{ textTransform: 'capitalize' }}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
               </div>
-            )}
 
-            <Btn type="submit" size="lg" disabled={submitting} loading={submitting} style={{ marginTop: 12, width: '100%' }}>
-              {tab === 'login' ? 'Sign In' : 'Create Account'}
-            </Btn>
-          </form>
+              {tab === 'register' && (
+                <Input label="Full Name" name="name" value={formData.name} onChange={handleChange} error={errors.name} placeholder="Rahul Sharma" autoComplete="name" />
+              )}
+              
+              <Input label="Email Address" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} placeholder="name@email.com" autoComplete="email" />
 
-          <div style={{ textAlign: 'center', marginTop: 32 }}>
-            <p style={{ fontSize: '0.9rem', color: 'var(--muted)', fontWeight: 500 }}>
-              {tab === 'login' ? "Don't have an account?" : "Already have an account?"}
-              {' '}
-              <button 
-                onClick={() => handleTab(tab === 'login' ? 'register' : 'login')}
-                style={{ color: 'var(--orange-solid)', fontWeight: 800, background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                {tab === 'login' ? 'Join AutiSense' : 'Sign In instead'}
-              </button>
-            </p>
-          </div>
-        </Card>
-      </Container>
-    </PageWrapper>
+              <Input label="Password" name="password" type="password" value={formData.password} onChange={handleChange} error={errors.password} placeholder="••••••••" autoComplete={tab === 'login' ? 'current-password' : 'new-password'} />
+              
+              {tab === 'register' && (
+                <Input label="Confirm Password" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} error={errors.confirmPassword} placeholder="••••••••" autoComplete="new-password" />
+              )}
+
+              {tab === 'login' && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: -4 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: 'var(--muted)', cursor: 'pointer', fontWeight: 600 }}>
+                    <input type="checkbox" style={{ accentColor: 'var(--orange-solid)', cursor: 'pointer', width: 16, height: 16 }} defaultChecked /> Remember me
+                  </label>
+                  <button type="button" onClick={() => showToast('Check your email for instructions.', 'info')} style={{ fontSize: '0.85rem', color: 'var(--orange-solid)', fontWeight: 800 }}>
+                    Forgot Password?
+                  </button>
+                </div>
+              )}
+
+              <Btn type="submit" size="lg" disabled={submitting} loading={submitting} style={{ marginTop: 8, width: '100%' }}>
+                {tab === 'login' ? 'Sign In Now' : 'Create My Account'}
+              </Btn>
+            </form>
+
+            <div style={{ textAlign: 'center', marginTop: 32 }}>
+              <p style={{ fontSize: '0.95rem', color: 'var(--muted)', fontWeight: 500 }}>
+                {tab === 'login' ? "New to AutiSense?" : "Already have an account?"}
+                {' '}
+                <button 
+                  onClick={() => handleTab(tab === 'login' ? 'register' : 'login')}
+                  style={{ color: 'var(--orange-solid)', fontWeight: 800, background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                  {tab === 'login' ? 'Create one here' : 'Sign In instead'}
+                </button>
+              </p>
+            </div>
+          </GlassCard>
+        </Container>
+      </div>
+    </div>
   );
 }

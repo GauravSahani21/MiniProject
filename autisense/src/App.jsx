@@ -19,8 +19,7 @@ import PatientDetailPage from './pages/PatientDetailPage';
 import AwarenessPage    from './pages/AwarenessPage';
 import AdminPanel       from './pages/AdminPanel';
 import NotFoundPage     from './pages/NotFoundPage';
-import DrawingAnalysisPage from './pages/DrawingAnalysisPage';
-import FaceEyeScanPage from './pages/FaceEyeScanPage';
+import UnifiedScanPage from './pages/UnifiedScanPage';
 
 import Navbar from './components/Navbar';
 import Chatbot from './components/Chatbot';
@@ -47,8 +46,9 @@ function AppLayout() {
         <Route path="/"          element={<LandingPage />} />
         <Route path="/login"     element={<LoginPage />} />
         <Route path="/awareness" element={<AwarenessPage />} />
-        <Route path="/drawing-analysis" element={<DrawingAnalysisPage />} />
-        <Route path="/face-eye-scan" element={<FaceEyeScanPage />} />
+        <Route path="/visual-screening" element={<UnifiedScanPage />} />
+        <Route path="/drawing-analysis" element={<Navigate to="/visual-screening" replace />} />
+        <Route path="/face-eye-scan" element={<Navigate to="/visual-screening" replace />} />
         <Route path="*"          element={<NotFoundPage />} />
 
         {/* Parent */}

@@ -409,6 +409,9 @@ tbody tr:last-child { border-bottom: none; }
   gap: 6px;
   padding: 8px;
   z-index: 1001;
+  background: transparent;
+  border: none;
+  cursor: pointer;
 }
 
 .hamburger span {
@@ -441,8 +444,8 @@ tbody tr:last-child { border-bottom: none; }
 
 @media (max-width: 1024px) {
   .navbar { padding: 0 24px; }
-  .navbar-links { display: none; }
-  .hamburger { display: flex; }
+  .navbar-links { display: none !important; }
+  .hamburger { display: flex !important; }
 }
 
 /* ── Skeleton ─────────────────────────────────────── */
@@ -490,3 +493,44 @@ tbody tr:last-child { border-bottom: none; }
 /* ── Scroll Utility ───────────────────────────────── */
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+/* ── Login Split Screen ───────────────────────────── */
+.login-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  min-height: 100vh;
+  background: white;
+}
+
+.visual-panel {
+  background: linear-gradient(160deg, var(--orange-solid) 0%, var(--orange-deep) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 80px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.visual-panel::before {
+  content: '';
+  position: absolute;
+  top: -10%; right: -10%;
+  width: 400px; height: 400px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 50%;
+}
+
+.form-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  background: var(--cream);
+}
+
+@media (max-width: 1024px) {
+  .login-grid { grid-template-columns: 1fr; }
+  .visual-panel { display: none; }
+  .form-panel { padding: 40px 20px; }
+}

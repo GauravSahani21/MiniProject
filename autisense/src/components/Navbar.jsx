@@ -70,11 +70,8 @@ export default function Navbar() {
         <button style={s('/awareness')} onClick={() => go('/awareness')}>
           🧩 Awareness
         </button>
-        <button style={s('/drawing-analysis')} onClick={() => go('/drawing-analysis')}>
-          🎨 Drawing Analysis
-        </button>
-        <button style={s('/face-eye-scan')} onClick={() => go('/face-eye-scan')}>
-          👁️ Face & Eye Scan
+        <button style={s('/visual-screening')} onClick={() => go('/visual-screening')}>
+          🤖 AI Visual Screening
         </button>
         <button style={s('/login')} onClick={() => go('/login')}>
           Login
@@ -113,11 +110,8 @@ export default function Navbar() {
         <button style={s('/awareness')} onClick={() => go('/awareness')}>
           🧩 Awareness
         </button>
-        <button style={s('/drawing-analysis')} onClick={() => go('/drawing-analysis')}>
-          🎨 Drawing Analysis
-        </button>
-        <button style={s('/face-eye-scan')} onClick={() => go('/face-eye-scan')}>
-          👁️ Face & Eye Scan
+        <button style={s('/visual-screening')} onClick={() => go('/visual-screening')}>
+          🤖 AI Visual Screening
         </button>
         <button style={s(dash)} onClick={() => go(dash)}>
           Dashboard
