@@ -214,25 +214,36 @@ OUTPUT JSON schema:
       };
     }
 
-    // Save the combined report to the database
+    // ── DB WRITE ────────────────────────────────────────────────────────────
+    // IMPORTANT: Only store the AI analysis report text and numeric biometric
+    // metrics. The raw drawing image (base64) and webcam video frames are
+    // NEVER persisted — they are used only transiently for Gemini inference.
+    // Explicitly whitelist each field so no accidental blob can reach MongoDB.
+    const safeMetrics = {
+      eyeContactScore:  typeof faceMetrics?.eyeContactScore  === 'number' ? faceMetrics.eyeContactScore  : null,
+      blinkRate:        typeof faceMetrics?.blinkRate         === 'number' ? faceMetrics.blinkRate         : null,
+      headStability:    typeof faceMetrics?.headMovement      === 'number' ? faceMetrics.headMovement      : null,
+      durationSeconds:  typeof faceMetrics?.duration          === 'number' ? faceMetrics.duration          : null,
+    };
+
     const scanRecord = await VisualScan.create({
-      userId: req.user?._id || null,
-      childName: childName || 'Unknown',
+      userId:    req.user?._id || null,
+      childName: childName    || 'Unknown',
       drawingResult: {
         prediction: drawingResult.prediction,
-        reasoning: drawingResult.reasoning,
-        score: drawingResult.score
+        reasoning:  drawingResult.reasoning,
+        score:      drawingResult.score
       },
       faceResult: {
-        riskLevel: faceResult.riskLevel,
-        reasoning: faceResult.reasoning,
+        riskLevel:  faceResult.riskLevel,
+        reasoning:  faceResult.reasoning,
         confidence: faceResult.confidence,
-        metrics: faceMetrics || {}
+        metrics:    safeMetrics
       },
       combinedReport: {
-        overallRisk: combinedResult.overallRisk,
-        overallScore: combinedResult.overallScore,
-        summary: combinedResult.summary,
+        overallRisk:     combinedResult.overallRisk,
+        overallScore:    combinedResult.overallScore,
+        summary:         combinedResult.summary,
         recommendations: combinedResult.recommendations || []
       }
     });
